@@ -6,13 +6,14 @@
 
 import os
 import tempfile
+import readlines
 
 # Request input files and parameters from the user
 topology = input("Enter the topology file (*.prmtop): ")
 trajectory = input("Enter the trajectory file (*.dcd or *.mdcrd): ")
 initial_snapshot = input("Enter the number of the first snapshot to consider: ")
 final_snapshot = input("Enter the number of the last snapshot to consider: ")
-residue_range = input("Enter the residue range to analyze (e.g., 1-25): ")
+residue_range = input("Enter the residue range to analyze (e.g., 1-25), numbers separated by commas are also accepted (e.g., 1, 50, 75): ")
 num_clusters = input("Enter the number of clusters (e.g., 10): ")
 sieve_value = input("Enter the sieve value (e.g., 10): ")
 maxit_value = input("Enter the max iterations for k-means (e.g., 500): ")

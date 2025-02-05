@@ -7,11 +7,12 @@
 import os
 import subprocess
 import tempfile
+import readlines
 
 # Request the user for the parameter files and other options
 parm_file = input("Enter the parameter file name (*.prmtop): ")  # Your parameter file
 traj_file = input("Enter the trajectory file name (*.dcd or *.mdcrd): ")  # Your trajectory file
-residues_range = input("Enter the residue range for hydrogen bond contacts (e.g., :1-25): ")  # Residue range for hydrogen bonds
+residues_range = input("Enter the residue range for hydrogen bond contacts (e.g., 1-25), numbers separated by commas are also accepted (e.g., 1, 50, 75): ")  # Residue range for hydrogen bonds
 include_intramol = input("Do you want to include intramolecular hydrogen bonds? (y/n): ").lower() == 'y'  # Ask if user wants intramol included
 
 # Create a temporary file for cpptraj commands

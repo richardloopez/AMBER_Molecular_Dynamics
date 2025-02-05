@@ -6,12 +6,13 @@
 
 import os
 import tempfile
+import readlines
 
 # Request the user for the pose number, parm file, and center residue range
 pose = input("Enter the number of the pose you want to select: ")
 parm_file = input("Enter the path to the parm file (*.prmtop): ")
 trajectory_file = input("Enter the trajectory file (*.mdcrd or *.dcd): ")
-center_residues = input("Enter the range of residues for 'center' (e.g., :1-25): ")
+center_residues = input("Enter the range of residues for 'center' (e.g., :1-25), numbers separated by commas are also accepted (e.g., 1, 50, 75): ")
 
 # Create a temporary file for the cpptraj commands
 with tempfile.NamedTemporaryFile('w', delete=False) as tmpfile:  # Opening the file in write mode

@@ -6,12 +6,12 @@
 
 import os
 import tempfile
+import readlines
 
 # Request the user for the initial and final residue numbers
 topology_file = input("Enter the topology file (*.prmtop): ")
 trajectory_file = input("Enter the trajectory file (*.mdcrd or *.dcd): ")
-initial_residue = input("Enter the initial residue number: ")
-final_residue = input("Enter the final residue number: ")
+residues = input("Enter a range of residues (eg., 1-25), numbers separated by commas are also accepted (e.g., 1, 50, 75): ")
 
 # Request the user for the base name of the output file
 output_base_name = input("Enter the base name for the output file (without extension): ")
@@ -23,7 +23,7 @@ with tempfile.NamedTemporaryFile('w', delete=False) as tmpfile:
     # Write the cpptraj commands to the temporary file
     tmpfile.write(f"""parm {topology_file}
 trajin {trajectory_file}
-rms ToFirst :{initial_residue}-{final_residue}&!@H= first out {output_base_name}_rmsd.agr mass
+rms ToFirst :{residues}&!@H= first out {output_base_name}_rmsd.agr mass
 run
 quit
 """)

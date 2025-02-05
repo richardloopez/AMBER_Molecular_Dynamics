@@ -7,12 +7,13 @@
 import os
 import subprocess
 import tempfile
+import readlines
 
 # Request the user for the necessary files and ranges
 parm_file = input("Enter the parameter file name (*.prmtop): ")  # Your parameter file
 traj_file = input("Enter the trajectory file name (*.dcd or *.mdcrd): ")  # Your trajectory file
-ligand_range = input("Enter the ligand residue range (e.g., 1-1): ")  # Residue range for ligand
-receptor_range = input("Enter the receptor residue range (e.g., 2-25): ")  # Residue range for receptor
+ligand_range = input("Enter the ligand residue range (e.g., 1-1), numbers separated by commas are also accepted (e.g., 1, 50, 75): ")  # Residue range for ligand
+receptor_range = input("Enter the receptor residue range (e.g., 2-25), numbers separated by commas are also accepted (e.g., 1, 50, 75): ")  # Residue range for receptor
 
 # Create a temporary file for cpptraj commands
 with tempfile.NamedTemporaryFile('w', delete=False) as tmpfile:

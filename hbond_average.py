@@ -7,7 +7,7 @@
 import os
 import subprocess
 import tempfile
-import readlines
+import readline
 
 # Request the user for the parameter files and other options
 parm_file = input("Enter the parameter file name (*.prmtop): ")  # Your parameter file

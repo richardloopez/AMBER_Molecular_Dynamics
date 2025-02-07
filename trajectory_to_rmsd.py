@@ -6,7 +6,7 @@
 
 import os
 import tempfile
-import readlines
+import readline
 
 # Request the user for the initial and final residue numbers
 topology_file = input("Enter the topology file (*.prmtop): ")

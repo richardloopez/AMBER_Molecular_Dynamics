@@ -5,7 +5,7 @@
 # Citation: If you use this code, please cite Lopez-Corbalan, R.
 
 import os
-import readlines
+import readline
 
 # Function to process each .agr file and return the data
 def process_agr(file_path):

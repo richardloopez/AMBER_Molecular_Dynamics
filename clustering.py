@@ -6,7 +6,7 @@
 
 import os
 import tempfile
-import readlines
+import readline
 
 # Request input files and parameters from the user
 topology = input("Enter the topology file (*.prmtop): ")

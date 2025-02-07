@@ -6,7 +6,7 @@
 
 import os
 import tempfile
-import readlines
+import readline
 
 # Request the user for the pose number, parm file, and center residue range
 pose = input("Enter the number of the pose you want to select: ")

@@ -257,7 +257,7 @@ Output: A file (lie.dat) with LIE analysis results
 
 
 
-##MMPBGSA AUTOMATED CALCULATIONS
+**##MMPBGSA AUTOMATED CALCULATIONS**
 
 Documentation for Automated MMPBSA Analysis Workflow
 Introduction

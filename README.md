@@ -4,7 +4,7 @@
 	-In the attached .pdf a guide for each script is provided
 	-total_hbond_interactions.py has special interest because it performs hbond between selected residues in each selected frame (told by the user), a functionality not implemented by cpptraj. It offers a .csv archive as output.
 
- Molecular Analysis Scripts Collec on 
+ *Molecular Analysis Scripts Collec on*
 
 0.	auto_md_amber
 This Python script automates a series of molecular dynamics (MD) simulations, including steps such as minimization (min), heating (heat), pressure equilibration (npt), and multiple MD stages (md), using Amber and pmemd.cuda. It is designed to work in a modular fashion, where each simulation step is executed sequentially in its own folder. The script handles file copying, .in file generation, .sh script generation, and submission to a cluster via sbatch.

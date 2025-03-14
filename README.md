@@ -4,9 +4,9 @@
 	-In the attached .pdf a guide for each script is provided
 	-total_hbond_interactions.py has special interest because it performs hbond between selected residues in each selected frame (told by the user), a functionality not implemented by cpptraj. It offers a .csv archive as output.
 
- *Molecular Analysis Scripts Collec on*
+ **Molecular Analysis Scripts Collec on**
 
-0.	auto_md_amber
+**0.	auto_md_amber**
 This Python script automates a series of molecular dynamics (MD) simulations, including steps such as minimization (min), heating (heat), pressure equilibration (npt), and multiple MD stages (md), using Amber and pmemd.cuda. It is designed to work in a modular fashion, where each simulation step is executed sequentially in its own folder. The script handles file copying, .in file generation, .sh script generation, and submission to a cluster via sbatch.
 
 Features
@@ -41,7 +41,7 @@ The script automatically waits for the completion of each step before proceeding
 
 
  
-2.	select_pose 
+**2.	select_pose**
 This script automates the extrac on of a specific pose from a molecular dynamics trajectory using cpptraj.Func onality: 
 •	Allows user to select a specific pose 
 •	Centers the pose based on a specified residue range 
@@ -65,7 +65,7 @@ Output: A PDB file with the pose number as filename (e.g., 1.pdb for pose 1)
  
  
  
-2.	clustering 
+**3.	clustering** 
 This script automates the clustering of molecular dynamics snapshots using cpptraj.Func onality: 
 •	Performs k-means clustering on molecular trajectories 
 •	Allows specifica on of parameters such as number of clusters and sieve value 
@@ -90,7 +90,7 @@ Output:
  
  
  
-3.	trajectory_to_rmsd 
+**4.	trajectory_to_rmsd** 
 This script automates the calcula on of Root Mean Square Devia on (RMSD) for a specific range of residues in a molecular dynamics trajectory.Func onality: 
 •	Calculates RMSD of specified residues rela ve to the first frame of the trajectory 
 Usage: 
@@ -115,7 +115,7 @@ Output: An RMSD plot file (*.agr) containing RMSD data
  
  
  
-4.	rmsd_columns 
+**5.	rmsd_columns** 
 This script processes mul ple RMSD data files (*.agr format), extracts the data, and combines them into a single CSV file.Func onality: 
 •	Combines RMSD data for receptor, ligand, and ligand-receptor system 
 •	Aligns datasets and fills with empty cells where data is missing 
@@ -140,7 +140,7 @@ Output: A CSV file (rmsd_columns.csv) with combined RMSD data
  
  
  
-5.	hbond_average 
+**6.	hbond_average** 
 This script performs hydrogen bond analysis on a molecular dynamics trajectory using cpptraj.Func onality: 
 •	Calculates hydrogen bond contacts within a specified residue range 
 •	Op on to include intramolecular hydrogen bonds 
@@ -165,7 +165,7 @@ Output: A file (avg_hbond.dat) with average hydrogen bond contact data
  
  
  
-6.	total_hbond_interac ons 
+**7.	total_hbond_interactions** 
 This script performs detailed hydrogen bond analysis on a molecular dynamics trajectory for a specified residue range.Func onality: 
 •	Calculates number of hydrogen bond interac ons for each frame 
 •	Generates CSV files with detailed data and summaries 
@@ -190,7 +190,7 @@ Output:
  
  
  
-7.	watershell 
+**8.	watershell**
 This script performs water shell analysis on a molecular dynamics trajectory using cpptraj.Func onality: 
 •	Analyzes water molecule interac on within a specified residue range 
 Usage: 
@@ -215,7 +215,7 @@ Output: A file (watershell.out.dat) with water shell analysis results
  
  
  
-8.	solva on_spheres_average 
+**9.	solva on_spheres_average** 
 This script calculates average solva on shell values based on data from a watershell.out.dat file.Func onality: 
 •	Calculates average for first and second solva on shells 
 Usage: 
@@ -240,7 +240,7 @@ Output: A file (solva on_average.txt) with solva on shell averages
  
  
  
-9.	lie 
+**10.	lie** 
 This script automates Linear Interac on Energy (LIE) analysis using cpptraj.Func onality: 
 •	Calculates interac on energy between a ligand and receptor for each frame of a trajectory 
 Usage: 

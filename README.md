@@ -291,6 +291,51 @@ The script generates the following output files within the specified output fold
 
 
 
+**11.5 molecule_counter.py**
+
+Description:
+This script automates the analysis of molecular dynamics data by counting occurrences of specified molecule codes in a CSV file containing residue information. It processes each frame of the input data and generates a summary CSV file with detailed counts and residue lists for the selected molecule codes.
+
+Functionality:
+
+Allows users to specify multiple molecule codes for analysis.
+
+Validates user inputs interactively, including file names and molecule codes.
+
+Reads residue data from an input CSV file and processes each frame.
+
+Counts occurrences of specified molecule codes and extracts related residue details.
+
+Generates an output CSV file with the following columns:
+
+Frame number.
+
+Molecule code.
+
+Residues associated with the molecule code.
+
+Count of occurrences for each molecule code.
+
+Usage:
+
+Run the script: python molecule_counter.py.
+
+Provide the following inputs when prompted:
+
+Input CSV file containing residue data (e.g., distances_summary.csv).
+
+Molecule codes to analyze (e.g., WAT, ION).
+
+The script will generate an output CSV file named {input_file_name}_{molecule_codes}_counts.csv.
+
+Output:
+The script generates a CSV file summarizing the analysis with detailed counts and residue lists for each selected molecule code.
+
+Let me know if you need further adjustments!
+
+
+
+
 **##MMPBGSA AUTOMATED CALCULATIONS**
 
 Documentation for Automated MMPBSA Analysis Workflow

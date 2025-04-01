@@ -12,8 +12,7 @@ import readline
 parm_file = input("Enter the parameter file name (*.prmtop): ")  # Your parameter file
 traj_file = input("Enter the trajectory file name (*.dcd or *.mdcrd): ")  # Your trajectory file
 num_frames = int(input("Enter the total number of frames: "))  # Total number of frames (adjust as per your file)
-residue1 = input("Enter the number of the first residue to study: ")  # Number of the first residue to consider
-residue2 = input("Enter the number of the last residue to study: ")  # Number of the last residue to consider
+residues = input("Enter the number of the residues to study: ")  # Number of the resiudes to consider
 include_intramol = input("Do you want to include intramolecular hydrogen bonds? (y/n): ").lower() == 'y'  # Ask if user wants to include intramol interactions
 output_dir = "hbond_results"  # Directory to save results
 
@@ -33,7 +32,7 @@ for frame in range(1, num_frames + 1):
         f.write(f"trajin {traj_file} {frame} {frame}\n")
         # Add or exclude intramolecular option based on user input
         intramol_option = "" if include_intramol else " nointramol"
-        f.write(f"hbond contacts :{residue1}-{residue2} avgout avg_hbond.dat{intramol_option}\n")
+        f.write(f"hbond contacts :{residues} avgout avg_hbond.dat{intramol_option}\n")
 
     # Run cpptraj for this frame
     subprocess.run(["cpptraj", "-i", input_file])

@@ -74,15 +74,28 @@ with open("cpptraj_pdb.in", "w") as f:
 # Execute cpptraj to generate the temporary PDB file
 subprocess.run(["cpptraj", "-i", "cpptraj_pdb.in"], check=True)
 
-# Read residue names and total number of residues from the temporary PDB file
+# Read and adjust residue numbers from PDB
 residue_names = {}
+prev_res = -1
+cycle_counter = -1  # Begins with -1 for correct management of the first cycle
+
 with open("temp_first_frame.pdb", 'r') as pdb:
     for line in pdb:
         if line.startswith("ATOM"):
-            residue_number = line[22:26].strip()
+            raw_res = line[22:26].strip()
+            current_res = int(raw_res) if raw_res else 0
+            
+            # Adjust on Amber numeration
+            if current_res < prev_res:
+                cycle_counter += 1
+            adjusted_res = current_res + 10000 * (cycle_counter + 1)
+            prev_res = current_res
+            
             residue_name = line[17:20].strip()
-            if residue_number not in residue_names:
-                residue_names[residue_number] = residue_name
+            residue_key = str(adjusted_res)
+            
+            if residue_key not in residue_names:
+                residue_names[residue_key] = residue_name
 
 total_residues = len(residue_names)
 residues = [str(i) for i in range(1, total_residues + 1) if i != target_residue]

@@ -258,36 +258,67 @@ Output: A file (lie.dat) with LIE analysis results
 
 **11. distance_analyzer.py**
 
-Description:
-This script automates the analysis of residue distances within molecular dynamics trajectories using cpptraj.
-It calculates distances between a specified target residue and all other residues, filters these distances based on a user-defined range, and generates comprehensive output files.
+Description
+This script automates the analysis of residue distances within molecular dynamics trajectories using cpptraj. It calculates distances between a specified target residue and all other residues, filters these distances based on a user-defined range, and generates comprehensive output files. Additionally, it resolves issues with PDB files containing more than 9999 residues by correctly adjusting residue numbering.
 
-Functionality:
-• Calculates distances between a target residue and all other residues in the trajectory using cpptraj.
-• Filters calculated distances based on a user-defined minimum and maximum range.
-• Generates three CSV files:
-  - A file containing all calculated distances.
-  - A file containing only the distances that fall within the specified range.
-  - A summary file that lists, for each frame, the residues within the specified distance range of the target residue.
-• Automatically creates an output folder to store all generated CSV files for organized access.
-• Cleans up all temporary files generated during the analysis.
+Functionality
+Calculates distances between a target residue and all other residues in the trajectory using cpptraj.
 
-Usage:
-1. Run the script: python distance_analyzer.py
-2. Provide the following inputs when prompted:
-  • Topology file (e.g., *.prmtop)
-  • Trajectory file (e.g., *.mdcrd or *.dcd)
-  • Target residue number
-  • Minimum distance for filtering (in Å)
-  • Maximum distance for filtering (in Å)
-  • Name of the output folder
+Filters calculated distances based on a user-defined minimum and maximum range.
 
-Output:
+Handles PDB files with more than 9999 residues by:
+
+Detecting and adjusting residue numbers that restart at 0 due to AMBER's limitations.
+
+Correctly assigning unique numbers to residues by adding offsets for each cycle of 9999 residues.
+
+Generates three CSV files:
+
+A file containing all calculated distances.
+
+A file containing only the distances that fall within the specified range.
+
+A summary file that lists, for each frame, the residues within the specified distance range of the target residue.
+
+Automatically creates an output folder to store all generated CSV files for organized access.
+
+Cleans up all temporary files generated during the analysis.
+
+Usage
+Run the script:
+
+python distance_analyzer.py
+Provide the following inputs when prompted:
+
+Topology file (e.g., *.prmtop)
+
+Trajectory file (e.g., *.mdcrd or *.dcd)
+
+Target residue number
+
+Minimum distance for filtering (in Å)
+
+Maximum distance for filtering (in Å)
+
+Name of the output folder
+
+Output
 The script generates the following output files within the specified output folder:
-• {output_folder_name}_complete.csv: Contains all calculated distances between the target residue and every other residue for each frame.
-• {output_folder_name}_filtered.csv: Contains distances that fall within the specified range.
-• {output_folder_name}_summary.csv: Lists the residues within the specified distance range of the target residue for each frame.
 
+{output_folder_name}_complete.csv: Contains all calculated distances between the target residue and every other residue for each frame.
+
+{output_folder_name}_filtered.csv: Contains distances that fall within the specified range.
+
+{output_folder_name}_summary.csv: Lists the residues within the specified distance range of the target residue for each frame.
+
+New Feature: Handling PDB Files with >9999 Residues
+Automatically adjusts residue numbering in PDB files where AMBER restarts numbering at 0 after reaching 9999 residues.
+
+Ensures unique numbering by adding offsets of +10000 for each cycle of 9999 residues:
+
+Example: Residue 0 becomes 10000, 1 becomes 10001, etc., in subsequent cycles.
+
+This adjustment guarantees compatibility with large systems without errors in residue identification.
 
 
 

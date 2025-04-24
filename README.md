@@ -1,8 +1,7 @@
 # AMBER_Molecular_Dynamics
 	-This repository is composed by different codes for better treatment of AMBER Molecular Dynamics Data:
 	-Most of them use cpptraj tool to generate the output, but implementing a user-friendly interface, without missing parameters
-	-In the attached .pdf a guide for each script is provided
-	-total_hbond_interactions.py has special interest because it performs hbond between selected residues in each selected frame (told by the user), a functionality not implemented by cpptraj. It offers a .csv archive as output.
+
 
  **Molecular Analysis Scripts Collec on**
 
@@ -41,7 +40,7 @@ The script automatically waits for the completion of each step before proceeding
 
 
  
-**2.	select_pose**
+**1.	select_pose**
 This script automates the extrac on of a specific pose from a molecular dynamics trajectory using cpptraj.Func onality: 
 •	Allows user to select a specific pose 
 •	Centers the pose based on a specified residue range 
@@ -65,7 +64,7 @@ Output: A PDB file with the pose number as filename (e.g., 1.pdb for pose 1)
  
  
  
-**3.	clustering** 
+**2.	clustering** 
 This script automates the clustering of molecular dynamics snapshots using cpptraj.Func onality: 
 •	Performs k-means clustering on molecular trajectories 
 •	Allows specifica on of parameters such as number of clusters and sieve value 
@@ -90,7 +89,7 @@ Output:
  
  
  
-**4.	trajectory_to_rmsd** 
+**3.	trajectory_to_rmsd** 
 This script automates the calcula on of Root Mean Square Devia on (RMSD) for a specific range of residues in a molecular dynamics trajectory.Func onality: 
 •	Calculates RMSD of specified residues rela ve to the first frame of the trajectory 
 Usage: 
@@ -115,7 +114,7 @@ Output: An RMSD plot file (*.agr) containing RMSD data
  
  
  
-**5.	rmsd_columns** 
+**4.	rmsd_columns** 
 This script processes mul ple RMSD data files (*.agr format), extracts the data, and combines them into a single CSV file.Func onality: 
 •	Combines RMSD data for receptor, ligand, and ligand-receptor system 
 •	Aligns datasets and fills with empty cells where data is missing 
@@ -140,7 +139,7 @@ Output: A CSV file (rmsd_columns.csv) with combined RMSD data
  
  
  
-**6.	hbond_average** 
+**5.	hbond_average** 
 This script performs hydrogen bond analysis on a molecular dynamics trajectory using cpptraj.Func onality: 
 •	Calculates hydrogen bond contacts within a specified residue range 
 •	Op on to include intramolecular hydrogen bonds 
@@ -165,7 +164,7 @@ Output: A file (avg_hbond.dat) with average hydrogen bond contact data
  
  
  
-**7.	total_hbond_interactions** 
+**6.	total_hbond_interactions** 
 This script performs detailed hydrogen bond analysis on a molecular dynamics trajectory for a specified residue range.Func onality: 
 •	Calculates number of hydrogen bond interac ons for each frame 
 •	Generates CSV files with detailed data and summaries 
@@ -190,7 +189,7 @@ Output:
  
  
  
-**8.	watershell**
+**7.	watershell**
 This script performs water shell analysis on a molecular dynamics trajectory using cpptraj.Func onality: 
 •	Analyzes water molecule interac on within a specified residue range 
 Usage: 
@@ -215,7 +214,7 @@ Output: A file (watershell.out.dat) with water shell analysis results
  
  
  
-**9.	solva on_spheres_average** 
+**8.	solva on_spheres_average** 
 This script calculates average solva on shell values based on data from a watershell.out.dat file.Func onality: 
 •	Calculates average for first and second solva on shells 
 Usage: 
@@ -240,7 +239,7 @@ Output: A file (solva on_average.txt) with solva on shell averages
  
  
  
-**10.	lie** 
+**9.	lie** 
 This script automates Linear Interac on Energy (LIE) analysis using cpptraj.Func onality: 
 •	Calculates interac on energy between a ligand and receptor for each frame of a trajectory 
 Usage: 
@@ -256,7 +255,7 @@ Output: A file (lie.dat) with LIE analysis results
 
 
 
-**11. distance_analyzer.py**
+**10. distance_analyzer.py**
 
 Description
 This script automates the analysis of residue distances within molecular dynamics trajectories using cpptraj. It calculates distances between a specified target residue and all other residues, filters these distances based on a user-defined range, and generates comprehensive output files. Additionally, it resolves issues with PDB files containing more than 9999 residues by correctly adjusting residue numbering.

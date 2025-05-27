@@ -198,9 +198,13 @@ for filename in os.listdir(cwd):
 
 # Write ultimate csv
 
-
 def write_data_to_csv(data_dict, output_filename):
-    headers = ["filename", "R1", "R2", "EELEC_AV", "EELEC_STDDEV", "EVDW_AV", "EVDW_STDDEV"]
+    headers = [
+        "filename", "R1", "R2", 
+        "EELEC_AV", "EELEC_STDDEV", 
+        "EVDW_AV", "EVDW_STDDEV",
+        "TOTAL_AV", "TOTAL_STDDEV"
+    ]
 
     with open(output_filename, mode="w", newline="") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=headers)
@@ -216,17 +220,28 @@ def write_data_to_csv(data_dict, output_filename):
                 R1 = ""
                 R2 = ""
 
+            # Get values, defaulting to 0.0 if missing
+            EELEC_AV = values.get("EELEC_AV", 0.0)
+            EELEC_STDDEV = values.get("EELEC_STDDEV", 0.0)
+            EVDW_AV = values.get("EVDW_AV", 0.0)
+            EVDW_STDDEV = values.get("EVDW_STDDEV", 0.0)
+
+            # Calculate TOTAL_AV and TOTAL_STDDEV
+            TOTAL_AV = EELEC_AV + EVDW_AV
+            TOTAL_STDDEV = (EELEC_STDDEV ** 2 + EVDW_STDDEV ** 2) ** 0.5
+
             row = {
                 "filename": filename,
                 "R1": R1,
                 "R2": R2,
-                "EELEC_AV": values.get("EELEC_AV", ""),
-                "EELEC_STDDEV": values.get("EELEC_STDDEV", ""),
-                "EVDW_AV": values.get("EVDW_AV", ""),
-                "EVDW_STDDEV": values.get("EVDW_STDDEV", "")
+                "EELEC_AV": EELEC_AV,
+                "EELEC_STDDEV": EELEC_STDDEV,
+                "EVDW_AV": EVDW_AV,
+                "EVDW_STDDEV": EVDW_STDDEV,
+                "TOTAL_AV": TOTAL_AV,
+                "TOTAL_STDDEV": TOTAL_STDDEV
             }
             writer.writerow(row)
-
 
 write_data_to_csv(all_data, "final_results_with_residues.csv")
 print("Data saved to final_results_with_residues.csv")

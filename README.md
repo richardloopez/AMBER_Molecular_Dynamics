@@ -629,4 +629,65 @@ The Python dynamics script called inside (reparametrizacion_parmed_min_dinamica.
 
 
 
+**2. reparametrizacion_parmed_min_dinamica.py**
+
+Description:
+This Python script automates a focused, minimal workflow tailored specifically for force field reparametrization protocols in AMBER. Its goal is to prepare the system via heavy-atom mass repartitioning (using Parmed), followed by a single energy minimization step through pmemd.cuda and SLURM job submission, with file organization and output conversion integrated.
+
+This script is NOT intended for extended MD simulations like heating, NPT equilibration, or production runs, but strictly for the reparametrization preparatory process.
+
+Input Requirements
+system.prmtop and system.inpcrd files pre-generated in the ../bases/ directory.
+
+AMBER environment properly configured with:
+
+parmed
+
+pmemd.cuda and associated utility scripts (launch_pmemd.cuda, mdcrd_to_dcd, rst_to_pdb).
+
+SLURM job scheduler accessible (sbatch command).
+
+Python 3 interpreter.
+
+Workflow Summary
+Heavy-atom mass repartitioning (parmed step):
+
+Creates parmed/ directory.
+
+Copies topology and coordinate files into parmed/.
+
+Runs parmed commands to generate a modified topology file with redistributed hydrogen masses (system_hmass.prmtop).
+
+Energy minimization (min/ step):
+
+Creates min/ directory.
+
+Copies system_hmass.prmtop and system.inpcrd from the parmed/ directory.
+
+Writes a basic minimization input file with specified parameters targeting implicit solvent (igb=6) and zero steps (maxcyc=0) — you can edit this file for your specific needs.
+
+Uses the external launch_pmemd.cuda tool to generate a SLURM submission script .sh.
+
+Modifies the submission script to use the correct parameters for minimization.
+
+Submits the minimization job to SLURM and waits until the .rst restart file is produced.
+
+Converts .mdcrd trajectory to .dcd and restart to .pdb using auxiliary scripts for easy visualization and analysis.
+
+Outputs Organized per Step
+parmed/ → Contains output of the heavy-mass repartitioning step (system_hmass.prmtop).
+
+min/ → Contains minimization input/output, restart files, MD trajectories in .dcd, and structure snapshot .pdb.
+
+Notes
+The minimization input is minimal and may need customization (e.g., number of cycles, cutoffs) depending on your system and goals.
+
+This script assumes a controlled environment tailored for rapid parametrization cycles without full equilibration or production dynamics.
+
+To extend beyond this minimal workflow, other scripts or adaptations (like your auto_md_amber.py) can be used, but they are outside the scope of this script.
+
+Paths to auxiliary tools (launch_pmemd.cuda, mdcrd_to_dcd, rst_to_pdb) need to be in your PATH or adjusted accordingly.
+
+SLURM is used for job control; ensure access and commands are appropriate for your cluster environment.
+
 

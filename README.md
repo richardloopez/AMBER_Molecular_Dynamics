@@ -691,3 +691,59 @@ Paths to auxiliary tools (launch_pmemd.cuda, mdcrd_to_dcd, rst_to_pdb) need to b
 SLURM is used for job control; ensure access and commands are appropriate for your cluster environment.
 
 
+
+
+
+
+
+**3. Print_Information_min_out.py**
+
+
+Description:
+This script performs a shallow recursive search (depth = 1) from the base directory to find all .out files (typical Gaussian or similar output files) containing standard tables with headers including "NStep", "Energy", and "RMS". For each .out file, it locates the last occurrence of this table (by searching from the end of the file) and extracts the energy value from the line immediately following the header. It collects these energy values together with the relative path of the .out files and writes them into a CSV file named Search_Results.csv located in the base directory.
+
+Input
+Base directory where the script is executed (current working directory).
+
+Folder structure up to depth 1 (only the immediate subdirectories of the base).
+
+.out files inside those subdirectories.
+
+The .out files must contain output tables with headers that include the keywords: NStep, Energy, and RMS.
+
+How It Works
+The script starts in the current directory (base_dir) and creates or overwrites the CSV file Search_Results.csv with the header: ["Archivo", "Valor ENERGY"] (File, Energy Value).
+
+It recursively explores directories up to depth 1.
+
+In each directory, it finds all files ending with .out.
+
+For each .out file, it reads lines in reverse order searching for the table header containing "nstep", "energy", and "rms".
+
+Upon finding the last such table, it extracts the energy value from the line following the header (second column).
+
+It records in Search_Results.csv both the relative path of the .out file and the extracted energy.
+
+In case of decoding errors or incomplete data, it marks an appropriate notice in the CSV and continues processing.
+
+Output
+A CSV file named Search_Results.csv generated in the base directory with two columns:
+
+Archivo: relative path to the .out file
+
+Valor ENERGY: extracted energy value from the last table found in the file
+
+Usage
+Run the script from the base directory:
+
+python3 search_out_energy.py
+The Search_Results.csv file will be created or updated automatically.
+
+Notes
+Only explores folder trees up to depth 1 (adjustable by modifying the depth_degree parameter in the script).
+
+Expects .out files with output table headers typical of Gaussian energy or minimization steps.
+
+Handles file encoding errors gracefully without stopping the overall search.
+
+Very helpful for quickly extracting energy data from large sets of Gaussian or similar output files.

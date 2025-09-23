@@ -365,6 +365,31 @@ Let me know if you need further adjustments!
 
 
 
+**12. multi_dihedral_analyzer.py**
+
+This Python script automates the analysis of multiple dihedral angles from molecular dynamics trajectories using cpptraj. It is designed to be flexible and easily adaptable to molecules with different numbers of dihedrals and structural symmetry.
+
+Key Features
+Fully configurable dihedral definitions and classification ranges via the input section.
+
+Supports any number of dihedrals and multiple symmetric "arms" or branches of a molecule by adjusting only the input variables.
+
+Automates creation of cpptraj input files for all defined dihedrals.
+
+Runs cpptraj to extract dihedral angle trajectories from molecular dynamics simulations.
+
+Generates summary CSV files consolidating angles, classifies frames into conformational groups based on user-defined angular ranges, and outputs statistics on grouped conformations.
+
+Modular and loop-based design ensures that only the input section needs to be modified for different systems, making it scalable and user-friendly.
+
+The crucial all_dihedrals_ranges setup links each dihedral selection to its corresponding angular ranges and classification identifiers, which is central to the classification logic.
+
+Usage
+To analyze a different molecule with a different number of dihedrals or arms, modify the dihedral definitions and their corresponding range groupings in the input section. The program handles the rest automatically through nested loops and classification logic.
+
+
+
+
 
 **##MMPBGSA AUTOMATED CALCULATIONS**
 

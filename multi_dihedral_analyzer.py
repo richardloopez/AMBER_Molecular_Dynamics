@@ -210,18 +210,15 @@ summary_csv_df.to_csv("dihedrals_summary_with_classification.csv", index=False)
 # Create a new DataFrame grouping by the full classification string
 grouped = summary_csv_df.groupby("classification")
 
-# Prepare a summary DataFrame: classification, number of frames, frame indices
+# Prepare a summary DataFrame: classification, number of frames, frame indices (starting from 1)
 group_summary = pd.DataFrame({
     "classification": grouped.groups.keys(),
     "num_frames": [len(grouped.groups[key]) for key in grouped.groups.keys()],
-    "frame_indices": [list(grouped.groups[key]) for key in grouped.groups.keys()]
+    "frame_indices": [[i + 1 for i in grouped.groups[key]] for key in grouped.groups.keys()]
 })
 
 # Save the summary DataFrame to CSV
 group_summary.to_csv("dihedrals_grouped_by_conformation.csv", index=False)
-
-
-
 
 
 

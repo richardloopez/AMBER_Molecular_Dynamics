@@ -389,6 +389,26 @@ To analyze a different molecule with a different number of dihedrals or arms, mo
 
 
 
+**13. dcd_conformation_splitter.py**
+
+This Python script automates the splitting of molecular dynamics (MD) trajectories based on conformational cluster assignments derived from dihedral angle analysis. Using as input a parameter/topology file, an MD trajectory file (.dcd), and a CSV file detailing conformations classified by frame indices, the script generates and executes customized cpptraj input files to extract sub-trajectories corresponding to each conformation.
+
+Main features
+Parses a CSV file containing conformer classifications and their associated frame indices.
+
+Creates a results directory and organizes all relevant files for traceability (script, parameter, trajectory, and CSV).
+
+Generates cpptraj input files tailored for each conformation to extract specified frames from the full trajectory.
+
+Executes cpptraj to produce individual trajectory files (.dcd) per conformation.
+
+Validates the creation of input script files and output .dcd files, logging status messages for each processed conformation.
+
+Provides comprehensive summary messages indicating success or any file creation errors, facilitating easy debugging and verification.
+
+Usage context
+The script is designed for researchers working in computational chemistry, structural biology, or molecular dynamics simulation analysis who need to dissect large trajectories into subsets organized by conformational states. This enables detailed structural or dynamical insight into particular molecular conformations.
+
 
 
 **##MMPBGSA AUTOMATED CALCULATIONS**

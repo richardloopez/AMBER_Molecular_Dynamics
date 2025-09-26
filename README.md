@@ -132,10 +132,65 @@ Output: A CSV file (rmsd_columns.csv) with combined RMSD data
  
  
  
+ **3-4. -JOINED- 	traj_rmsd_csv_columns.py** 
  
  
- 
- 
+ This Python script automates the process of calculating Root Mean Square Deviation (RMSD) for molecular dynamics trajectories using cpptraj, and then compiles the resulting .agr files into a single, organized CSV file.
+
+It's designed to calculate the RMSD for three distinct components—Ligand, Receptor, and Ligand + Receptor—in a single run.
+
+🚀 Features
+Integrated Workflow: Combines the RMSD calculation (using cpptraj) and the data compilation into a CSV (based on the logic of rmsd_columns.py) into a single, cohesive script.
+
+Multiple RMSD Calculations: Calculates and outputs separate RMSD values for:
+
+Ligand
+
+Receptor
+
+Ligand + Receptor
+
+File Path Autocompletion: Uses the readline and glob libraries to provide Tab-completion for file paths in the terminal, improving user experience.
+
+Traceability: Generates a cpptraj_commands.in file containing the exact commands used, ensuring reproducibility.
+
+CSV Output: Creates a final rmsd_columns.csv file where the RMSD data for the three components is presented in parallel columns for easy plotting and analysis.
+
+Customizable Residues: Allows the user to specify the residue ranges for each component (Ligand, Receptor, Ligand+Receptor) via command-line input.
+
+⚙️ Prerequisites
+Python 3
+
+cpptraj: This script relies on the cpptraj program being installed and accessible in your system's PATH.
+
+🖥️ How to Run
+Save the script (e.g., as full_rmsd_analysis.py).
+
+Run it from your terminal:
+
+Bash
+
+python3 full_rmsd_analysis.py
+Follow the prompts: You will be asked to enter the file paths for your topology and trajectory, and the residue selections for the Ligand, Receptor, and Ligand+Receptor. Use Tab for file path autocompletion!
+
+Example Input Prompts:
+Enter the topology file (*.prmtop): complex.prmtop
+Enter the trajectory file (*.mdcrd or *.dcd): production.mdcrd
+| LIGAND | Enter a range of residues (eg., 1-25), numbers separated by commas are also accepted (e.g., 1, 50, 75): 180-200
+| RECEPTOR | Enter a range of residues (eg., 1-25), numbers separated by commas are also accepted (e.g., 1, 50, 75): 1-179
+| LIGAND+RECEPTOR | Enter a range of residues (eg., 1-25), numbers separated by commas are also accepted (e.g., 1, 50, 75): 1-200
+📄 Output Files
+The script generates the following files:
+
+ligand_rmsd.agr: RMSD data for the ligand.
+
+receptor_rmsd.agr: RMSD data for the receptor.
+
+ligandreceptor_rmsd.agr: RMSD data for the complex.
+
+cpptraj_commands.in: A plain text file showing the exact cpptraj commands used.
+
+rmsd_columns.csv: The final output file containing all three sets of RMSD data side-by-side, ready for plotting.
  
  
  

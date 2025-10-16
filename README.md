@@ -847,3 +847,92 @@ Expects .out files with output table headers typical of Gaussian energy or minim
 Handles file encoding errors gracefully without stopping the overall search.
 
 Very helpful for quickly extracting energy data from large sets of Gaussian or similar output files.
+
+
+
+
+
+
+
+
+**##MD PREPARATION SCRIPTS (BETA)**
+
+**A. charges-antechamber-tleap.py**
+
+Pipeline Automática para la Preparación de Dinámica Molecular (Gaussian/Amber)
+
+Este script Python (charges-antechamber-tleap.py) automatiza la secuencia completa de pasos computacionales necesarios para preparar un ligando orgánico para simulaciones de Dinámica Molecular utilizando el software Amber (a través de TLEAP), integrando cálculos de Gaussian para la obtención de cargas RESP.
+
+El flujo de trabajo gestiona automáticamente la copia de archivos entre directorios, la ejecución de programas externos (launch_g16, antechamber, parmchk2) y la modificación de scripts auxiliares mediante sustituciones dinámicas (similares a sed -i).
+
+Flujo de Trabajo (Pipeline)
+
+Preparación de Gaussian: Modifica el script ponedor_coordenadas_pdb_en_com.py para asegurar que el archivo de entrada de Gaussian (S1_II_1_E.com) sea generado correctamente a partir de la plantilla y las coordenadas del PDB.
+
+Cálculo Gaussian: Lanza la simulación en segundo plano y espera la terminación normal del cálculo (S1_II_1_E.log).
+
+Antechamber/Parmchk2: Utiliza el log de Gaussian para ejecutar Antechamber (generando S1_II_1_E.mol2 con cargas RESP) y Parmchk2 (generando S1_II_1_E.frcmod con parámetros faltantes).
+
+Preparación de Dinámica (TLEAP):
+
+Copia los archivos mol2 y frcmod generados a la carpeta archivos_dinamica/.
+
+Modifica el script hacedor_final_pdb.py con las rutas finales.
+
+Ejecuta hacedor_final_pdb.py para construir el PDB del complejo final (S1_II_1_E+HB1.pdb).
+
+Genera el script TLEAP: Procesa la plantilla primigenio_leap.in para crear el archivo final tleap.in, sustituyendo las variables de ligando, archivos de parámetros y el PDB del complejo final.
+
+
+
+**A/1 (charges): ponedor_coordenadas_pdb_en_com.py**
+
+
+Ponedor de Coordenadas PDB en Archivo de Entrada Gaussian (.com)
+
+Este script auxiliar tiene la función de fusionar la cabecera de un archivo de entrada de Gaussian (.com) con las coordenadas atómicas de un archivo PDB.
+
+Funcionalidad clave:
+
+Lee una plantilla de archivo Gaussian (nombre_com_base), buscando la línea de referencia que indica la carga y multiplicidad (ej: "0 1").
+
+Lee un archivo PDB (nombre_pdb).
+
+Filtra y extrae solo las coordenadas de las líneas ATOM o HETATM que pertenecen al residuo llamado "UNL" (unligand, sin nombre).
+
+Escribe un nuevo archivo de entrada de Gaussian, tomando la cabecera de la plantilla e insertando las coordenadas filtradas.
+
+Asegura la inclusión de una línea en blanco obligatoria al final del archivo, requerida para la correcta terminación de los archivos de entrada de Gaussian.
+
+
+
+**A/2 (antechamber): Esta carpeta no necesita script, el proceso se hace en charges-antechamber-tleap.py**
+
+
+
+**A/3 (archivos_dinamica): hacedor_final_pdb.py**
+
+Combinador y Actualizador de PDBs (PDB Final para TLEAP)
+
+Este script es crucial para la fase de Dinámica Molecular, ya que crea el archivo PDB del complejo final que TLEAP utilizará para la solvatación y el setup de la simulación.
+
+Funcionalidad clave:
+
+Extracción de Coordenadas: Lee el PDB del ligando (PDB_LIG), extrayendo las coordenadas de los átomos que tienen el nombre de residuo "UNL".
+
+Extracción de Atomtypes: Lee el archivo MOL2 (MOL2_FILE), generado por Antechamber, para obtener los atomtypes Amber específicos para cada átomo del ligando.
+
+Sustitución en el Receptor: Lee el PDB de referencia del complejo Receptor-Ligando (PDB_REF).
+
+Reemplazo Inteligente: Busca los residuos de tipo "NOU" (Placeholder) en el PDB de referencia. Reemplaza estos residuos placeholder por los átomos del ligando, realizando simultáneamente tres cambios críticos:
+
+Actualiza el nombre del residuo de "UNL" / "NOU" a la abreviatura final del ligando (ej: "S1X").
+
+Actualiza el campo del Atomtype con los valores extraídos del archivo MOL2.
+
+Asegura que las líneas TER asociadas al placeholder también se actualicen con la abreviatura final del ligando.
+
+Generación de Salida: Escribe el complejo final (OUTPUT_PDB) listo para ser cargado por TLEAP.
+
+
+

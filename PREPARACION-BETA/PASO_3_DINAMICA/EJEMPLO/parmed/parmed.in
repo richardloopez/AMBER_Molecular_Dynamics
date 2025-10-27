@@ -1,0 +1,4 @@
+module purge
+hmassrepartition
+outparm system_hmass.prmtop
+quit

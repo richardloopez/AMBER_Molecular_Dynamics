@@ -466,6 +466,34 @@ The script is designed for researchers working in computational chemistry, struc
 
 
 
+
+
+**14. plane-angle-calc.py **
+
+Plane Angle Calculator for Molecular Dynamics (cpptraj interface)
+
+This Python tool automates the calculation of the angle between planes defined by three atoms each from two different residues in a biomolecular system, using cpptraj from the Amber suite. The user provides parameter and trajectory files (Amber .prmtop/.dcd/.mdcrd formats), specifies atom indices for two residues, and the script prepares a working directory, sets up all necessary cpptraj input commands, and extracts the desired geometric angle with named outputs.
+
+Key Features:
+
+Interactive prompts for parameter and trajectory file names, plus atom indices for two residue triplets.
+
+Automated creation of a dedicated data directory and organized file copying for reproducibility.
+
+Generates cpptraj input scripts dynamically for vector, cross product, and angle calculations.
+
+Executes cpptraj and cleans up temporary files automatically.
+
+Clearly logs the workflow and results for traceability.
+
+
+
+
+
+
+
+
+
 **##MMPBGSA AUTOMATED CALCULATIONS**
 
 Documentation for Automated MMPBSA Analysis Workflow

@@ -9,7 +9,7 @@ import os
 import subprocess
 
 #############################################################################################################################################
-# Input -> dihedrals_grouped_by_conformation.csv | REVIEEW EACH SECTION CAREFULLY. #
+# Input -> dihedrals_grouped_by_conformation.csv | REVIEW EACH SECTION CAREFULLY. #
 #############################################################################################################################################
 
 

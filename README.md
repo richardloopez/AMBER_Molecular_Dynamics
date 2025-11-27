@@ -964,3 +964,62 @@ Generación de Salida: Escribe el complejo final (OUTPUT_PDB) listo para ser car
 
 
 
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+**************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+**##AMBER MD AUTOMATION**
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# Amber MD Automation for SLURM Clusters
+
+## Overview
+
+This repository contains a high-throughput, automated Python workflow for executing Molecular Dynamics (MD) simulations using the **Amber** software suite (`pmemd.cuda`) on **SLURM-managed High-Performance Computing (HPC) clusters**.
+
+The script `ultimate_dynamics-CTC.py` orchestrates the entire simulation lifecycle—from minimization and heating to equilibration and production—handling job dependencies, error checking, and file management automatically. It is designed to be robust, ensuring that a simulation step only proceeds once the previous step has successfully completed and converged.
+
+## Key Features
+
+* **Automated Workflow:** Sequentially executes 19+ defined simulation steps without user intervention.
+* **SLURM Integration:** Automatically generates submission scripts, submits jobs via `sbatch`, and monitors queue status.
+* **Robust Error Handling:** Checks output files for specific termination flags (e.g., "TIMINGS") to ensure runs finished correctly before proceeding.
+* **Gentle Equilibration Protocol:** Implements a step-wise release of positional restraints (from 25 kcal/mol·Å² down to unrestrained) to ensure system stability.
+* **H-Mass Repartitioning:** Includes functional blocks for `ParmEd` integration to enable Hydrogen Mass Repartitioning (HMR) for larger time steps (requires uncommenting in `main()`).
+* **Context:** Specifically configured for GPU nodes (CTC configuration), but easily adaptable to other SLURM partitions.
+
+## Simulation Protocol
+
+The workflow enforces a rigorous physical protocol to prepare the system:
+
+1.  **Minimization (Steps 1-5):**
+    * Gradual reduction of restraints on protein/nucleic acids (25 $\to$ 8 $\to$ 5 $\to$ 2 kcal/mol·Å²).
+    * Final unrestrained minimization.
+2.  **NVT Heating (Step 6):**
+    * Linear heating from 0K to 310K with restraints (5 kcal/mol·Å²).
+3.  **NPT Equilibration (Steps 7-9):**
+    * Pressure equilibration while reducing restraints (2 $\to$ 0.5 $\to$ 0 kcal/mol·Å²).
+4.  **Production (Steps 10-19+):**
+    * Long-scale sampling in NPT ensemble.
+
+## Prerequisites
+
+* **Python 3.x**
+* **AmberTools / Amber** (specifically `pmemd.cuda` for GPU acceleration)
+* **SLURM Workload Manager**
+* **(Optional) ParmEd** (if using H-mass repartitioning)
+
+## Directory Structure
+
+To run the script, your working directory must be organized as follows:
+
+```text
+.
+├── ultimate_dynamics-CTC.py   # This script
+├── system_hmass.prmtop        # (Optional) If skipping ParmEd step, place topology here
+├── parmed_setup/              # Created automatically if HMR is run
+└── bases/                     # Input directory
+    ├── system.prmtop          # Original topology
+    └── system.inpcrd          # Original coordinates

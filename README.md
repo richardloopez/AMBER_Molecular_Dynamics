@@ -1023,3 +1023,62 @@ To run the script, your working directory must be organized as follows:
 └── bases/                     # Input directory
     ├── system.prmtop          # Original topology
     └── system.inpcrd          # Original coordinates
+```
+
+
+# Amber-SimQA: Automated Simulation Quality Assurance
+
+## Overview
+
+**Amber-SimQA** is a comprehensive post-processing analytical engine designed to validate Molecular Dynamics (MD) simulations performed with the Amber software suite. 
+
+Running simulations is only half the battle; verifying their stability is the other. This tool automatically parses output logs and trajectory files across multiple simulation steps (Minimization $\to$ Heating $\to$ Equilibration $\to$ Production) to generate a unified **Quality Assurance Report**. It seamlessly bridges thermodynamic data parsing with structural analysis (via `cpptraj`) to provide an instant "health check" of your system.
+
+## Key Features
+
+* **Global Timeline Reconstruction:** Stitches together discontinuous simulation steps (e.g., `md1`, `md2`... `md10`) into a single cumulative timeline for long-term trend analysis.
+* **Hybrid Analysis:**
+    * **Thermodynamic:** Parses `.out` files for Energy, Temperature, Pressure, and Density.
+    * **Structural:** Invokes `cpptraj` to calculate **RMSD** and **Radius of Gyration (RoG)** directly from trajectory files.
+* **Visual Snapshots:** Automatically generates centered PDB snapshots of the final frame of each step for quick visual inspection.
+* **Performance Tracking:** Extracts benchmarking data (`ns/day`) to monitor computational efficiency.
+* **Status Monitoring:** Detects whether steps completed successfully, are currently running, or failed.
+
+## Prerequisites
+
+* **Python 3.x**
+* **Python Libraries:** `pandas`, `numpy`, `matplotlib`
+* **AmberTools:** Specifically `cpptraj` must be in your system `$PATH`.
+
+## Directory Structure
+
+This script is designed to work with standard Amber workflow folder structures (where each step has its own directory or output files are named sequentially).
+
+**Expected Input Format:**
+The script looks for a sequence of steps defined in the configuration (e.g., `min_1`, `heat`, `npt`, `md1`...). It expects:
+1.  **Log Files:** `step_name.out`
+2.  **Trajectories:** `step_name.nc` or `step_name.mdcrd`
+3.  **Topology:** A single `.prmtop` file for the system.
+
+## Configuration
+
+Open `amber_qa.py` and adjust the **Global Configuration Variables** section to match your specific system:
+
+```python
+# 1. Topology File
+TOPOLOGY_FILE = "system_hmass.prmtop"
+
+# 2. Analysis Masks (Amber Selection Syntax)
+RMSD_MASK = ":1-1036@CA,C,N"  # Example: Protein Backbone
+ROG_MASK  = ":1-1036"         # Example: Full Protein
+
+# 3. Step Definitions
+# Ensure these match your actual folder/filename prefixes
+STEPS_ORDER = [
+    "min_1_solvent", "min_5_full", 
+    "heat_5RT", 
+    "md1", "md2", "md3" 
+    # Add your specific steps here
+]
+```
+

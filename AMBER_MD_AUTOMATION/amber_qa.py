@@ -2,17 +2,15 @@
 # -*- coding: utf-8 -*-
 
 """
-Amber Simulation Quality Assurance (QA) Analyzer
-================================================
+Amber Simulation Quality Assurance (QA) Analyzer - v5
+=====================================================
 
-This script parses Amber MD output files (.out) and trajectory files (.mdcrd/.nc)
-to generate a comprehensive report on simulation stability and performance.
+Professional QA tool for Amber MD simulations.
 
-It includes:
-1. Automated parsing of thermodynamic logs.
-2. Structural analysis (RMSD/RoG) using cpptraj.
-3. Generation of a single PDB snapshot (final frame) for each step.
-4. Global plotting with cumulative time axis.
+Updates in v5:
+- Explicit separation of Complex, Receptor, and Ligand analysis.
+- Robust warnings if Ligand/Receptor masks are invalid or empty.
+- Improved global plotting with distinct colors for each component.
 
 """
 
@@ -20,7 +18,7 @@ import os
 import re
 import sys
 import time
-import glob
+import shutil
 import subprocess
 import pandas as pd
 import numpy as np
@@ -31,37 +29,55 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 # ==========================================
-# --- 1. GLOBAL CONFIGURATION VARIABLES ---
+# --- CONFIGURATION SECTION (EDIT THIS) ---
 # ==========================================
 
-# Topology file used for cpptraj analysis
+# 1. FILES
 TOPOLOGY_FILE = "system_hmass.prmtop"
 
-# ----------------------------------------
-# MASKS FOR ANALYSIS (RMSD / RoG)
-# ----------------------------------------
-RMSD_MASK = ":1-1036"          # Residues to calculate RMSD on
-ROG_MASK  = ":1-1036"          # Residues to calculate Radius of Gyration on
+# 2. ANALYSIS MASKS (CRITICAL: UPDATE THESE FOR YOUR SYSTEM!)
+# These masks determine what is analyzed.
+# Example: ":1-300" (Residues 1 to 300), ":LIG" (Residue name LIG)
+COMPLEX_MASK  = ":1-1036"   # The whole system (Protein + Ligand)
+RECEPTOR_MASK = ":1-1010"   # Protein only
+LIGAND_MASK   = ":1011-1036"     # Ligand only (CHANGE THIS IF YOUR LIGAND IS DIFFERENT)
 
-# ----------------------------------------
-# MASKS FOR PDB GENERATION (Centering)
-# ----------------------------------------
+# Mask used for DCD generation (centering and imaging)
+DCD_ANCHOR_MASK = ":1-1036"    
 RESIDUES_FOR_CENTERING = ":1-1036" 
 
-# ----------------------------------------
-# DIRECTORIES & STEPS
-# ----------------------------------------
+# 3. DIRECTORIES
 REPORT_DIR = "QA_REPORT"
 PLOTS_DIR = os.path.join(REPORT_DIR, "Plots")
 PDB_DIR = os.path.join(REPORT_DIR, "PDB_Snapshots")
+PROD_DCD_DIR = "PROD_DCD"
 
-# Steps Order: The script uses this to stitch together the Global Plot correctly.
+# 4. SIMULATION STEPS ORDER
 STEPS_ORDER = [
-    "min_1_solvent", "min_2_8RT", "min_3_5RT", "min_4_2RT", "min_5_full",
-    "heat_5RT",
-    "npt_1_2RT", "npt_2_05RT", "npt_3_full",
-    "md1", "md2", "md3", "md4", "md5", "md6", "md7", "md8", "md9", "md10"
+    "STEP_01_MIN_RESTRAINT_25KCAL",
+    "STEP_02_MIN_RESTRAINT_8KCAL",
+    "STEP_03_MIN_RESTRAINT_5KCAL",
+    "STEP_04_MIN_RESTRAINT_2KCAL",
+    "STEP_05_MIN_UNRESTRAINED",
+    "STEP_06_NVT_RESTRAINT_5KCAL",
+    "STEP_07_NPT_RESTRAINT_2KCAL",
+    "STEP_08_NPT_RESTRAINT_05KCAL",
+    "STEP_09_NPT_UNRESTRAINED",
+    "STEP_10_PROD",
+    "STEP_11_PROD",
+    "STEP_12_PROD",
+    "STEP_13_PROD",
+    "STEP_14_PROD",
+    "STEP_15_PROD",
+    "STEP_16_PROD",
+    "STEP_17_PROD",
+    "STEP_18_PROD",
+    "STEP_19_PROD"
 ]
+
+def is_prod_step(step_name):
+    """Determines if a step is a production step based on naming convention."""
+    return "PROD" in step_name
 
 # ==========================================
 # --- END CONFIGURATION ---
@@ -69,7 +85,7 @@ STEPS_ORDER = [
 
 
 class AmberLogParser:
-    """Parses Amber .out files for thermodynamic and performance data."""
+    """Parses Amber .out files for thermodynamic data and timing info."""
     
     def __init__(self, filepath):
         self.filepath = filepath
@@ -83,7 +99,6 @@ class AmberLogParser:
         }
 
     def parse(self):
-        """Main parsing logic dispatcher."""
         if not os.path.exists(self.filepath):
             return None
         
@@ -92,18 +107,14 @@ class AmberLogParser:
                 self._parse_minimization()
             else:
                 self._parse_dynamics()
-            
             self._check_completion()
-        except Exception as e:
-            print(f"Error parsing {self.filename}: {e}")
+        except Exception:
             return None
 
         return self.data
 
     def _parse_minimization(self):
-        """Parses minimization steps."""
         data_list = []
-        # Regex handles scientific notation (e.g., 1.0E+02)
         re_min = re.compile(r"^\s*(\d+|[-+]?[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?)\s+([-+]?[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?)\s+([-+]?[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?)")
         
         with open(self.filepath, 'r') as f:
@@ -116,16 +127,20 @@ class AmberLogParser:
                 if match:
                     try:
                         data_list.append({
-                            'Step': int(float(match.group(1))),
+                            'Step': float(match.group(1)),
                             'Energy': float(match.group(2)),
                             'RMS_Force': float(match.group(3))
                         })
                     except ValueError:
                         continue
+        
         self.data = pd.DataFrame(data_list)
+        if not self.data.empty and 'Step' in self.data.columns:
+            # Cast step to int if safe
+            if (self.data['Step'] % 1 == 0).all():
+                 self.data['Step'] = self.data['Step'].astype(int)
 
     def _parse_dynamics(self):
-        """Parses MD steps robustly."""
         data_list = []
         current_frame = {}
         float_re = r"[-+]?[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?"
@@ -140,13 +155,20 @@ class AmberLogParser:
         re_perf  = re.compile(rf"ns/day\s*=\s*({float_re})")
         re_wall  = re.compile(rf"elapsed time\s*=\s*({float_re})")
 
+        perf_found = False
+
         with open(self.filepath, 'r') as f:
             for line in f:
-                # Stop if summary reached
-                if "A V E R A G E S" in line or "RMS fluctuations" in line or "Final Results" in line or "Final Performance Info" in line:
+                m_perf = re_perf.search(line)
+                if m_perf: 
+                    self.performance['ns_per_day'] = float(m_perf.group(1))
+                    perf_found = True
+                m_wall = re_wall.search(line)
+                if m_wall: self.performance['time_elapsed'] = float(m_wall.group(1))
+
+                if "A V E R A G E S" in line or "RMS fluctuations" in line or "Final Results" in line or ("Final Performance Info" in line and perf_found):
                     break
 
-                # New Block Detection
                 if "NSTEP" in line:
                     if current_frame:
                         data_list.append(current_frame)
@@ -158,7 +180,6 @@ class AmberLogParser:
                     if m_time: current_frame['Time_ps'] = float(m_time.group(1))
                     if m_temp: current_frame['Temp'] = float(m_temp.group(1))
                 
-                # Parse data within block
                 if current_frame or ("NSTEP" in line and current_frame):
                     m_press = re_press.search(line)
                     if m_press: current_frame['Press'] = float(m_press.group(1))
@@ -169,13 +190,6 @@ class AmberLogParser:
                     m_dens = re_dens.search(line)
                     if m_dens: current_frame['Density'] = float(m_dens.group(1))
 
-                # Performance info
-                m_perf = re_perf.search(line)
-                if m_perf: self.performance['ns_per_day'] = float(m_perf.group(1))
-                m_wall = re_wall.search(line)
-                if m_wall: self.performance['time_elapsed'] = float(m_wall.group(1))
-
-            # Add last frame
             if current_frame and 'Step' in current_frame:
                 data_list.append(current_frame)
 
@@ -197,19 +211,21 @@ class AmberLogParser:
             pass
 
 class StructureAnalyzer:
-    """Uses cpptraj to calculate RMSD, Radius of Gyration, and generate PDBs."""
+    """Handles cpptraj analysis for RMSD, RoG, DCD generation, and PDB snapshots."""
     
     def __init__(self, step_name, topology_file, out_file_path):
         self.step_name = step_name
         self.prmtop = topology_file
         
-        # Locate trajectory
+        # Smart trajectory finder
         base_dir = os.path.dirname(out_file_path)
         possible_traj = [
             os.path.join(base_dir, f"{step_name}.mdcrd"),
             os.path.join(base_dir, f"{step_name}.nc"),
-            os.path.join(base_dir, "mdcrd"),
-            os.path.join(base_dir, "prod.nc")
+            os.path.join(base_dir, "mdcrd"), 
+            os.path.join(base_dir, "prod.nc"),
+            f"{step_name}.mdcrd", 
+            f"{step_name}.nc"
         ]
         self.trajectory = None
         for p in possible_traj:
@@ -217,25 +233,16 @@ class StructureAnalyzer:
                 self.trajectory = p
                 break
         
-        self.stats_file = os.path.join(base_dir, "cpptraj_stats.dat")
         self.pdb_file = os.path.join(PDB_DIR, f"{step_name}_final.pdb")
 
-    def _read_cpptraj_dat(self, filepath, value_col_name):
-        """Robustly reads a cpptraj data file with unknown column count."""
+    def _read_cpptraj_dat(self, filepath, col_names):
         try:
-            # Read ignoring headers, assuming whitespace separation
-            df = pd.read_csv(filepath, sep='\s+', header=None, comment='#')
-            
-            # Logic to identify columns
-            # Standard "rms ... time 1.0 noheader" output: Frame | Time | RMSD
-            # Standard "radgyr ... time 1.0 noheader" output: Frame | Time | RoG
-            
-            if df.shape[1] == 3:
-                df.columns = ['Frame', 'Time_ps', value_col_name]
-            elif df.shape[1] == 2:
-                # If time was somehow missing
-                df.columns = ['Frame', value_col_name]
-                print(f"    [Warn] {value_col_name} file has only 2 cols (Missing time?).")
+            df = pd.read_csv(filepath, sep='\s+', header=None, comment='#', skipinitialspace=True)
+            # Handle cases where Time column might be missing
+            if df.shape[1] == len(col_names) + 1:
+                df.columns = ['Frame'] + col_names
+            elif df.shape[1] == len(col_names) + 2:
+                df.columns = ['Frame', 'Time_Cpptraj'] + col_names
             else:
                 return None
             return df
@@ -243,19 +250,30 @@ class StructureAnalyzer:
             return None
 
     def run_analysis(self):
-        """Generates RMSD/RoG data."""
+        """Calculates RMSD and RoG for Complex, Receptor, and Ligand."""
         if not self.trajectory or not os.path.exists(self.prmtop):
             return None
 
-        rms_file = self.stats_file.replace(".dat", "_rms.dat")
-        rog_file = self.stats_file.replace(".dat", "_rog.dat")
+        # Output filenames
+        f_rms_complex = os.path.join(REPORT_DIR, f"{self.step_name}_rms_complex.dat")
+        f_rms_rec     = os.path.join(REPORT_DIR, f"{self.step_name}_rms_rec.dat")
+        f_rms_lig     = os.path.join(REPORT_DIR, f"{self.step_name}_rms_lig.dat")
+        
+        f_rog_complex = os.path.join(REPORT_DIR, f"{self.step_name}_rog_complex.dat")
+        f_rog_rec     = os.path.join(REPORT_DIR, f"{self.step_name}_rog_rec.dat")
+        f_rog_lig     = os.path.join(REPORT_DIR, f"{self.step_name}_rog_lig.dat")
 
-        # REQUEST TIME for BOTH to ensure both have valid Time_ps columns
+        # Cpptraj script
         cpptraj_in = f"""
 parm {self.prmtop}
 trajin {self.trajectory}
-rms ToFirst {RMSD_MASK} first out {rms_file} time 1.0 noheader
-radgyr RoG {ROG_MASK} out {rog_file} time 1.0 noheader nomax
+rms RmsdComplex {COMPLEX_MASK} first out {f_rms_complex} time 1.0 noheader
+rms RmsdRec {RECEPTOR_MASK} first out {f_rms_rec} time 1.0 noheader
+rms RmsdLig {LIGAND_MASK} first out {f_rms_lig} time 1.0 noheader
+
+radgyr RogComplex {COMPLEX_MASK} out {f_rog_complex} time 1.0 noheader nomax
+radgyr RogRec {RECEPTOR_MASK} out {f_rog_rec} time 1.0 noheader nomax
+radgyr RogLig {LIGAND_MASK} out {f_rog_lig} time 1.0 noheader nomax
 run
 """
         script_name = f"temp_analysis_{self.step_name}.in"
@@ -265,45 +283,48 @@ run
                 f.write(cpptraj_in)
 
             subprocess.run(['cpptraj', '-i', script_name], 
-                           stdout=subprocess.DEVNULL, 
-                           stderr=subprocess.DEVNULL, check=True)
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
             
-            df_rms = None
-            df_rog = None
-
-            # 1. Read RMSD
-            if os.path.exists(rms_file):
-                df_rms = self._read_cpptraj_dat(rms_file, 'ToFirst')
-                os.remove(rms_file)
-
-            # 2. Read RoG
-            if os.path.exists(rog_file):
-                df_rog = self._read_cpptraj_dat(rog_file, 'RoG')
-                os.remove(rog_file)
-
-            # MERGE LOGIC
-            df_final = None
-            if df_rms is not None and df_rog is not None:
-                # Merge on Frame and Time (if present)
-                df_final = pd.merge(df_rms, df_rog[['Frame', 'RoG']], on='Frame', how='inner')
-            elif df_rms is not None:
-                df_final = df_rms
-            elif df_rog is not None:
-                df_final = df_rog
-
-            # Clean up input script
-            if os.path.exists(script_name): os.remove(script_name)
+            # Read and merge data
+            df_main = None
             
-            return df_final
+            # Helper to read and merge
+            def load_and_merge(fname, col_name, main_df):
+                if not os.path.exists(fname): 
+                    # Warning if file missing for expected outputs
+                    print(f"    [Warn] Missing output: {os.path.basename(fname)} (Check Masks)")
+                    return main_df
+                    
+                temp_df = self._read_cpptraj_dat(fname, [col_name])
+                os.remove(fname)
+                if temp_df is None or temp_df.empty: 
+                    return main_df
+                
+                if main_df is None:
+                    return temp_df
+                else:
+                    return pd.merge(main_df, temp_df[['Frame', col_name]], on='Frame', how='inner')
 
-        except Exception as e:
+            df_main = load_and_merge(f_rms_complex, 'RMSD_Complex', df_main)
+            df_main = load_and_merge(f_rms_rec, 'RMSD_Rec', df_main)
+            df_main = load_and_merge(f_rms_lig, 'RMSD_Lig', df_main)
+            df_main = load_and_merge(f_rog_complex, 'RoG_Complex', df_main)
+            df_main = load_and_merge(f_rog_rec, 'RoG_Rec', df_main)
+            df_main = load_and_merge(f_rog_lig, 'RoG_Lig', df_main)
+
             if os.path.exists(script_name): os.remove(script_name)
+            return df_main
+
+        except Exception:
+            # Cleanup on fail
+            for f in [script_name, f_rms_complex, f_rms_rec, f_rms_lig, 
+                      f_rog_complex, f_rog_rec, f_rog_lig]:
+                if os.path.exists(f): os.remove(f)
             return None
 
     def generate_pdb_snapshot(self):
-        """Generates a centered PDB of the LAST frame."""
         if not self.trajectory or not os.path.exists(self.prmtop):
-            return
+            return False
 
         if not os.path.exists(PDB_DIR):
             os.makedirs(PDB_DIR)
@@ -321,25 +342,54 @@ run
                 f.write(cpptraj_in)
 
             subprocess.run(['cpptraj', '-i', script_name], 
-                           stdout=subprocess.DEVNULL, 
-                           stderr=subprocess.DEVNULL)
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
             
             if os.path.exists(script_name): os.remove(script_name)
-            
-            if os.path.exists(self.pdb_file):
-                return True
+            return os.path.exists(self.pdb_file)
         except Exception:
-            pass
-        return False
+            if os.path.exists(script_name): os.remove(script_name)
+            return False
+
+    def generate_dcd(self):
+        if not self.trajectory or not os.path.exists(self.prmtop):
+            return None
+        
+        base_name = os.path.splitext(os.path.basename(self.trajectory))[0]
+        out_dcd_path = os.path.join(os.path.dirname(self.trajectory), f"{base_name}.dcd")
+
+        cpptraj_in = f"""
+parm {self.prmtop}
+trajin {self.trajectory}
+autoimage anchor {DCD_ANCHOR_MASK}
+trajout {out_dcd_path} dcd
+run
+quit
+"""
+        script_name = f"temp_dcd_{self.step_name}.in"
+        
+        try:
+            with open(script_name, 'w') as f:
+                f.write(cpptraj_in)
+
+            print(f"    ... Generating DCD: {os.path.basename(out_dcd_path)}")
+            subprocess.run(['cpptraj', '-i', script_name], 
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+
+            if os.path.exists(script_name): os.remove(script_name)
+            return out_dcd_path if os.path.exists(out_dcd_path) else None
+        except Exception:
+            if os.path.exists(script_name): os.remove(script_name)
+            return None
+
 
 class ReportGenerator:
-    """Generates Plots and Text Reports."""
+    """Generates visualization and markdown reports."""
     
     def __init__(self):
-        if not os.path.exists(PLOTS_DIR):
-            os.makedirs(PLOTS_DIR)
+        if not os.path.exists(PLOTS_DIR): os.makedirs(PLOTS_DIR)
+        if not os.path.exists(REPORT_DIR): os.makedirs(REPORT_DIR)
         self.summary_lines = []
-        self.summary_lines.append("| Step | Type | Status | NSTEP (Last) | Time (ps) | ns/day | Final Val |")
+        self.summary_lines.append("| Step | Type | Status | Frames (Log) | Duration (ps) | ns/day | Final Val |")
         self.summary_lines.append("|---|---|---|---|---|---|---|")
 
     def plot_minimization(self, df, step_name):
@@ -366,101 +416,109 @@ class ReportGenerator:
         
         has_density = 'Density' in df.columns
         has_press = 'Press' in df.columns
-        
-        rows = 2 
-        if has_density: rows += 1
-        if has_press: rows += 1
+        rows = 2 + (1 if has_density else 0) + (1 if has_press else 0)
         
         fig, ax = plt.subplots(rows, 1, figsize=(8, 3.5*rows))
         if rows == 1: ax = [ax]
         
-        # Temp
-        ax[0].plot(df['Step'], df['Temp'], color='orange', label='Temp')
+        ax[0].plot(df['Step'], df['Temp'], color='orange')
         ax[0].set_title(f'{step_name}: Temperature')
         ax[0].set_ylabel('T (K)')
         ax[0].grid(True, linestyle='--', alpha=0.6)
         
-        # Energy
-        if 'EPtot' in df.columns:
-            ax[1].plot(df['Step'], df['EPtot'], color='blue', label='Pot. Energy')
-            ax[1].set_title('Potential Energy')
-            ax[1].set_ylabel('kcal/mol')
-            ax[1].grid(True, linestyle='--', alpha=0.6)
-        else:
-            ax[1].text(0.5, 0.5, 'No EPtot Data', ha='center')
+        ax[1].plot(df['Step'], df['EPtot'], color='blue')
+        ax[1].set_title('Potential Energy')
+        ax[1].set_ylabel('kcal/mol')
+        ax[1].grid(True, linestyle='--', alpha=0.6)
 
         idx = 2
-        # Density
         if has_density:
             ax[idx].plot(df['Step'], df['Density'], color='green')
             ax[idx].set_title('Density')
             ax[idx].set_ylabel('g/cm³')
             ax[idx].grid(True, linestyle='--', alpha=0.6)
             idx += 1
-        # Pressure
         if has_press:
-            ax[idx].plot(df['Step'], df['Press'], color='purple', alpha=0.7)
+            ax[idx].plot(df['Step'], df['Press'], color='purple')
             ax[idx].set_title('Pressure')
             ax[idx].set_ylabel('Bar')
-            ax[idx].set_xlabel('Step (NSTEP)') 
             ax[idx].grid(True, linestyle='--', alpha=0.6)
 
         plt.tight_layout()
         plt.savefig(os.path.join(PLOTS_DIR, f"{step_name}_thermo.png"), dpi=100)
         plt.close()
 
-    def plot_production_global(self, full_df):
-        if full_df.empty: return
+    def plot_production_global(self, df_thermo, df_struct):
+        """
+        Plots global metrics.
+        Crucially, it plots Thermo and Struct data on independent axes/timeframes
+        to prevent 'cutting' caused by frequency mismatches.
+        """
+        if df_thermo.empty: return
         
-        # Use Cumulative Time (Calculated in main) for X axis
-        if 'Cum_Time_ns' in full_df.columns:
-            x_data = full_df['Cum_Time_ns']
-            x_label = 'Cumulative Time (ns)'
-        else:
-            x_data = full_df['Time_ps'] / 1000.0
-            x_label = 'Time (ns) [Discontinuous]'
-
-        fig, ax = plt.subplots(5, 1, figsize=(12, 18))
+        # Determine X axis for Thermo
+        x_thermo = df_thermo['Cum_Time_ns']
         
-        # 1. RMSD
-        if 'ToFirst' in full_df.columns:
-            ax[0].plot(x_data, full_df['ToFirst'], 'k-', lw=1)
-            ax[0].set_title('Global RMSD (vs Start)')
+        # Prepare Plot
+        fig, ax = plt.subplots(5, 1, figsize=(14, 20))
+        
+        # 1. RMSD (Complex, Receptor, Ligand)
+        if not df_struct.empty and 'Cum_Time_ns' in df_struct.columns:
+            x_struct = df_struct['Cum_Time_ns']
+            if 'RMSD_Complex' in df_struct.columns:
+                ax[0].plot(x_struct, df_struct['RMSD_Complex'], 'k-', lw=0.8, label='Complex')
+            if 'RMSD_Rec' in df_struct.columns:
+                ax[0].plot(x_struct, df_struct['RMSD_Rec'], 'b-', lw=0.8, alpha=0.7, label='Receptor')
+            if 'RMSD_Lig' in df_struct.columns:
+                ax[0].plot(x_struct, df_struct['RMSD_Lig'], 'r-', lw=0.8, alpha=0.7, label='Ligand')
+            else:
+                print("    [Warn] 'RMSD_Lig' not found in data. Skipping Ligand plot.")
+            
             ax[0].set_ylabel('RMSD (Å)')
-            ax[0].grid(True)
+            ax[0].legend(loc='upper left')
         else:
-            ax[0].text(0.5, 0.5, 'No RMSD Data Available', ha='center')
+            ax[0].text(0.5, 0.5, 'No Structural Data', ha='center')
+        ax[0].set_title('Global RMSD')
+        ax[0].grid(True)
         
-        # 2. RoG
-        if 'RoG' in full_df.columns:
-            ax[1].plot(x_data, full_df['RoG'], 'm-', lw=1)
-            ax[1].set_title('Radius of Gyration')
+        # 2. RoG (Complex, Receptor, Ligand)
+        if not df_struct.empty and 'Cum_Time_ns' in df_struct.columns:
+            x_struct = df_struct['Cum_Time_ns']
+            if 'RoG_Complex' in df_struct.columns:
+                ax[1].plot(x_struct, df_struct['RoG_Complex'], 'm-', lw=0.8, label='Complex')
+            if 'RoG_Rec' in df_struct.columns:
+                ax[1].plot(x_struct, df_struct['RoG_Rec'], 'b--', lw=0.8, alpha=0.6, label='Receptor')
+            if 'RoG_Lig' in df_struct.columns:
+                ax[1].plot(x_struct, df_struct['RoG_Lig'], 'r--', lw=0.8, alpha=0.6, label='Ligand')
+            
             ax[1].set_ylabel('RoG (Å)')
-            ax[1].grid(True)
+            ax[1].legend(loc='upper left')
         else:
-            ax[1].text(0.5, 0.5, 'No RoG Data Available', ha='center')
+            ax[1].text(0.5, 0.5, 'No RoG Data', ha='center')
+        ax[1].set_title('Radius of Gyration')
+        ax[1].grid(True)
         
         # 3. Potential Energy
-        if 'EPtot' in full_df.columns:
-            ax[2].plot(x_data, full_df['EPtot'], color='navy', lw=1)
-            ax[2].set_title('Global Potential Energy')
+        if 'EPtot' in df_thermo.columns:
+            ax[2].plot(x_thermo, df_thermo['EPtot'], color='navy', lw=1)
             ax[2].set_ylabel('kcal/mol')
-            ax[2].grid(True)
+        ax[2].set_title('Global Potential Energy')
+        ax[2].grid(True)
 
         # 4. Density
-        if 'Density' in full_df.columns:
-            ax[3].plot(x_data, full_df['Density'], 'g-', lw=1)
-            ax[3].set_title('Density')
+        if 'Density' in df_thermo.columns:
+            ax[3].plot(x_thermo, df_thermo['Density'], 'g-', lw=1)
             ax[3].set_ylabel('g/cm³')
-            ax[3].grid(True)
+        ax[3].set_title('Density')
+        ax[3].grid(True)
 
         # 5. Temperature
-        if 'Temp' in full_df.columns:
-            ax[4].plot(x_data, full_df['Temp'], color='orange', lw=0.5)
-            ax[4].set_title('Temperature')
+        if 'Temp' in df_thermo.columns:
+            ax[4].plot(x_thermo, df_thermo['Temp'], color='orange', lw=0.5)
             ax[4].set_ylabel('K')
-            ax[4].set_xlabel(x_label)
-            ax[4].grid(True)
+            ax[4].set_xlabel('Cumulative Time (ns)')
+        ax[4].set_title('Temperature')
+        ax[4].grid(True)
 
         plt.tight_layout()
         plt.savefig(os.path.join(PLOTS_DIR, "GLOBAL_PRODUCTION_METRICS.png"), dpi=100)
@@ -477,12 +535,39 @@ class ReportGenerator:
             f.write("\n".join(self.summary_lines))
         print(f"Report saved to {os.path.join(REPORT_DIR, 'Simulation_QA_Report.md')}")
 
+def merge_dcd_files(dcd_list):
+    """Merges collected DCD files into a single trajectory."""
+    if not dcd_list: return
+    
+    if not os.path.exists(PROD_DCD_DIR):
+        os.makedirs(PROD_DCD_DIR)
 
-# --- MAIN ---
+    output_merged = os.path.join(PROD_DCD_DIR, "merged_production.dcd")
+    print(f"\n--- Merging {len(dcd_list)} DCD files into {output_merged} ---")
+
+    script_lines = [f"parm {TOPOLOGY_FILE}"]
+    for dcd in dcd_list:
+        script_lines.append(f"trajin {dcd}")
+    
+    script_lines.append(f"trajout {output_merged} dcd")
+    script_lines.append("run")
+    script_lines.append("quit")
+    
+    script_name = "temp_merge_dcd.in"
+    try:
+        with open(script_name, 'w') as f:
+            f.write("\n".join(script_lines))
+        
+        subprocess.run(['cpptraj', '-i', script_name], check=True)
+        print("    -> Merge successful.")
+        if os.path.exists(script_name): os.remove(script_name)
+    except subprocess.CalledProcessError as e:
+        print(f"    [ERROR] Merging failed: {e}")
+
+# --- MAIN EXECUTION ---
 
 def find_files_to_process():
     files_map = []
-    
     for step in STEPS_ORDER:
         path = os.path.join(step, f"{step}.out")
         if os.path.exists(path):
@@ -490,18 +575,30 @@ def find_files_to_process():
             continue
         if os.path.exists(f"{step}.out"):
             files_map.append((step, f"{step}.out"))
-            
+            continue
+        if os.path.exists(f"{step}.log"):
+            files_map.append((step, f"{step}.log"))
+            continue
     return files_map
 
 def main():
-    print("--- Starting Amber QA Analysis (Final Version) ---")
+    print("--- Starting Amber QA Analysis (Professional Edition v5) ---")
     
     report = ReportGenerator()
-    global_md_thermo = []
+    
+    # Collections for Global Plot
+    global_thermo_list = []
+    global_struct_list = []
+    
+    # Tracking cumulative time offset
+    cumulative_offset_thermo = 0.0
+    cumulative_offset_struct = 0.0 # Track structure time separately
+    
+    generated_dcd_paths = []
     
     has_topology = os.path.exists(TOPOLOGY_FILE)
     if not has_topology:
-        print(f"Warning: Topology '{TOPOLOGY_FILE}' not found. Skipping RMSD/RoG and PDBs.")
+        print(f"Warning: Topology '{TOPOLOGY_FILE}' not found. Skipping structural analysis.")
 
     files_to_process = find_files_to_process()
     if not files_to_process:
@@ -511,8 +608,9 @@ def main():
     print(f"Found {len(files_to_process)} files to process.")
 
     for step_name, out_file in files_to_process:
-        print(f"Analyzing: {step_name} -> {out_file}")
+        print(f"Analyzing: {step_name}")
         
+        # 1. Parse Thermo Data
         parser = AmberLogParser(out_file)
         df_thermo = parser.parse()
         
@@ -520,100 +618,109 @@ def main():
             report.add_summary(f"| {step_name} | - | NO DATA | - | - | - | - |")
             continue
 
-        # Status Logic
+        # Check status
         if parser.performance['finished_normally']:
             status = "COMPLETED"
+        elif time.time() - os.path.getmtime(out_file) < 600:
+            status = "RUNNING"
         else:
-            try:
-                if time.time() - os.path.getmtime(out_file) < 3600:
-                    status = "RUNNING"
-                else:
-                    status = "FAILED"
-            except:
-                status = "FAILED"
+            status = "FAILED/STOPPED"
 
+        # Thermo Stats
         rows = len(df_thermo)
-        last_time = 0
-        last_step = 0
-        
+        last_time = 0.0
         if not parser.is_min and 'Time_ps' in df_thermo.columns:
-            last_time = df_thermo.iloc[-1]['Time_ps']
-            last_step = df_thermo.iloc[-1]['Step']
-            print(f"  -> Parsed {rows} frames. Sim Time: {last_time} ps. Status: {status}")
+            last_time = df_thermo['Time_ps'].iloc[-1]
+            step_duration = df_thermo['Time_ps'].iloc[-1] - df_thermo['Time_ps'].iloc[0]
+            if step_duration < 0: step_duration = df_thermo['Time_ps'].iloc[-1]
         else:
-            if 'Step' in df_thermo.columns: last_step = df_thermo.iloc[-1]['Step']
-            print(f"  -> Parsed {rows} frames. Status: {status}")
+             step_duration = 0.0
 
+        # 2. Structural Analysis
         df_struct = None
         if not parser.is_min and has_topology:
             struct_tool = StructureAnalyzer(step_name, TOPOLOGY_FILE, out_file)
-            
-            # PDB Generation
-            pdb_ok = struct_tool.generate_pdb_snapshot()
-            pdb_msg = "PDB Saved" if pdb_ok else "PDB Failed"
-            
-            # Struct Analysis
+            struct_tool.generate_pdb_snapshot()
             df_struct = struct_tool.run_analysis()
             
-            # Debug Output
-            rms_count = len(df_struct) if df_struct is not None and 'ToFirst' in df_struct.columns else 0
-            rog_count = len(df_struct) if df_struct is not None and 'RoG' in df_struct.columns else 0
-            print(f"  -> Struct Stats: RMSD ({rms_count} frames), RoG ({rog_count} frames). {pdb_msg}")
+            # DCD Generation
+            if is_prod_step(step_name):
+                dcd_path = struct_tool.generate_dcd()
+                if dcd_path: generated_dcd_paths.append(dcd_path)
 
-        # Reporting
+        # 3. Reporting & Accumulation
         if parser.is_min:
             report.plot_minimization(df_thermo, step_name)
             final_val = f"{df_thermo.iloc[-1]['Energy']:.1f}"
-            report.add_summary(f"| {step_name} | MIN | {status} | {int(last_step)} | - | - | {final_val} kcal |")
+            report.add_summary(f"| {step_name} | MIN | {status} | {rows} | - | - | {final_val} kcal |")
         
         else:
             report.plot_equilibration(df_thermo, step_name)
             dens_val = f"{df_thermo.iloc[-1]['Density']:.4f}" if 'Density' in df_thermo.columns else "N/A"
             perf = f"{parser.performance['ns_per_day']:.1f}"
-            report.add_summary(f"| {step_name} | MD | {status} | {int(last_step)} | {last_time:.1f} ps | {perf} | {dens_val} g/cm³ |")
-
-            # Combine for Global Plot
-            if df_struct is not None and 'Time_ps' in df_struct.columns:
-                combined_step = pd.merge_asof(df_thermo.sort_values('Time_ps'), 
-                                              df_struct.sort_values('Time_ps'), 
-                                              on='Time_ps', 
-                                              direction='nearest',
-                                              tolerance=1.0) 
+            
+            # --- GLOBAL PLOT PREPARATION ---
+            
+            # A. Process Thermo Data
+            start_t = df_thermo['Time_ps'].iloc[0]
+            if start_t < cumulative_offset_thermo:
+                 current_offset = cumulative_offset_thermo
             else:
-                combined_step = df_thermo
+                 current_offset = cumulative_offset_thermo
 
-            combined_step['_step_name'] = step_name
-            global_md_thermo.append(combined_step)
+            step_time_vector = df_thermo['Time_ps'] - df_thermo['Time_ps'].iloc[0]
+            df_thermo['Cum_Time_ns'] = (step_time_vector + cumulative_offset_thermo) / 1000.0
+            
+            actual_duration = step_time_vector.iloc[-1]
+            cumulative_offset_thermo += actual_duration
 
-    # Global Plot Logic
-    if global_md_thermo:
+            # Robust column handling (Fill missing with NaN to avoid KeyError)
+            required_cols = ['Cum_Time_ns', 'Temp', 'EPtot', 'Density']
+            for col in required_cols:
+                if col not in df_thermo.columns:
+                    df_thermo[col] = np.nan
+            
+            global_thermo_list.append(df_thermo[required_cols])
+
+            # B. Process Struct Data
+            if df_struct is not None:
+                n_frames = len(df_struct)
+                if n_frames > 0:
+                    dt_struct = actual_duration / n_frames
+                    struct_time_vector = np.arange(1, n_frames + 1) * dt_struct
+                    df_struct['Cum_Time_ns'] = (struct_time_vector + cumulative_offset_struct) / 1000.0
+                    
+                    global_struct_list.append(df_struct)
+                    cumulative_offset_struct += actual_duration
+
+            report.add_summary(f"| {step_name} | MD | {status} | {rows} | {last_time:.1f} ps | {perf} | {dens_val} g/cm³ |")
+
+    # 4. Generate Global Plots
+    if global_thermo_list:
         print("Generating Global Production Plots...")
-        full_df = pd.concat(global_md_thermo, ignore_index=True)
+        final_thermo = pd.concat(global_thermo_list, ignore_index=True)
+        final_struct = pd.concat(global_struct_list, ignore_index=True) if global_struct_list else pd.DataFrame()
         
-        # Cumulative Time Calculation
-        cum_time = []
-        current_offset = 0.0
-        last_t = 0.0
-        last_step_name = ""
-        
-        for index, row in full_df.iterrows():
-            t = row['Time_ps']
-            step = row['_step_name']
-            
-            # If step changes and time resets (goes backwards), add offset
-            if step != last_step_name:
-                if t < last_t:
-                    current_offset += last_t
-                last_step_name = step
-            
-            cum_time.append((t + current_offset) / 1000.0) # ns
-            last_t = t
+        report.plot_production_global(final_thermo, final_struct)
 
-        full_df['Cum_Time_ns'] = cum_time
-        report.plot_production_global(full_df)
+    # 5. DCD Merging
+    if generated_dcd_paths:
+        print(f"\n--- Processing {len(generated_dcd_paths)} DCD files ---")
+        final_dcd_list = []
+        if not os.path.exists(PROD_DCD_DIR): os.makedirs(PROD_DCD_DIR)
+        
+        for src in generated_dcd_paths:
+            dst = os.path.join(PROD_DCD_DIR, os.path.basename(src))
+            try:
+                shutil.copy2(src, dst)
+                final_dcd_list.append(dst)
+            except Exception as e:
+                print(f"    [Error] Copying {os.path.basename(src)}: {e}")
+        
+        merge_dcd_files(final_dcd_list)
 
     report.save_report()
-    print("\n--- Analysis Complete. Check 'QA_REPORT' folder ---")
+    print("\n--- QA Analysis Complete ---")
 
 if __name__ == "__main__":
     main()

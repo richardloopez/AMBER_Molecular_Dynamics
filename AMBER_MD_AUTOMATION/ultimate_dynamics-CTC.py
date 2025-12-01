@@ -145,7 +145,7 @@ Step 10 -Production- MD run
   irest = 1, ntx = 5, ig = -1,
   temp0 = 310.0,
   ntb = 2, ntc = 2, ntf=2, tol = 0.00001,
-  ntwx = 12500, ntwv= -1, ntwr = 50000, ntpr = 10000,
+  ntwx = 12500, ntwv= -1, ntwr = 50000, ntpr = 12500,
   cut = 9.0,
   ntt = 3, gamma_ln=2, ntp = 1, barostat=2, iwrap=1
 /

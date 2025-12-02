@@ -7,6 +7,7 @@
 import os
 import subprocess
 import time
+import shutil
 
 # --- 1. Global Simulation Settings (de ultimate_dynamics.py) ---
 # Define core parameters for the simulation
@@ -18,6 +19,7 @@ GLOBAL_SETTINGS = {
     'hmass_prmtop': 'system_hmass.prmtop', # Output prmtop from H-mass repartitioning
     'parmed_dir': 'parmed_setup',
     'base_dir': 'bases'                 # Directory containing original prmtop/inpcrd
+    'START_STEP_NUMBER': 0            # Change this if you want to start from a different step
 }
 
 # --- 2. Site-Specific SLURM Configuration (de dinamica_GPU_CTC.py) ---
@@ -343,76 +345,78 @@ def check_timings_in_output(output_file):
 def main():
     """
     Main function to orchestrate the simulation workflow.
+    Handles restart logic, directory management, and job submission.
     """
     
-    # 1. Run initial parmed setup
+    # 1. Run initial parmed setup (optional, depending on workflow)
     # run_parmed_setup()
 
-    # 2. Initialize loop variables
     parmed_dir = GLOBAL_SETTINGS['parmed_dir']
     prmtop_file = GLOBAL_SETTINGS['hmass_prmtop']
     
-    # The first step uses the inpcrd from the parmed dir
+    start_step = int(GLOBAL_SETTINGS.get('START_STEP_NUMBER', 1))
     previous_step_dir = parmed_dir
     coords_file = GLOBAL_SETTINGS['base_inpcrd'] 
 
-    # 3. Iterate through the simulation workflow
-    for step_config in SIMULATION_WORKFLOW:
+    for i, step_config in enumerate(SIMULATION_WORKFLOW):
         
+        current_step_number = i + 1
         step_name = step_config['name']
-        current_dir = step_name
-        print(f"--- Starting Step: {step_name} ---")
 
-        os.makedirs(current_dir, exist_ok=True)
-        os.chdir(current_dir)
+        if current_step_number < start_step:
+            print(f"--- Skipping Step {current_step_number}: {step_name} (Already completed) ---")
+            
+            previous_step_dir = step_name
+            coords_file = f"{step_name}.rst"
+            continue
 
-        # 2. Copy required files from previous step
-        # The prmtop is always the same, copied from the parmed dir
+        if current_step_number == start_step:
+            if os.path.exists(step_name):
+                print(f"--- Cleaning up previous failed attempt for Step {current_step_number} ---")
+                shutil.rmtree(step_name)
+
+        print(f"--- Starting Step {current_step_number}: {step_name} ---")
+        
+        os.makedirs(step_name, exist_ok=True)
+        os.chdir(step_name)
+
         subprocess.run(['cp', f'../{parmed_dir}/{prmtop_file}', '.'], check=True)
-        # The restart/coord file comes from the *immediate* previous step
+        
+        print(f"Copying input coordinates from: ../{previous_step_dir}/{coords_file}")
         subprocess.run(['cp', f'../{previous_step_dir}/{coords_file}', '.'], check=True)
 
-        # 3. Generate the .in file for this step
         with open(f"{step_name}.in", 'w') as f:
             f.write(step_config['in_content'])
 
-        # 4. Format the pmemd command from the workflow template
-        pmemd_command_template = step_config['sh_template']
-        pmemd_command = pmemd_command_template.format(
+        pmemd_command = step_config['sh_template'].format(
             step_name=step_name,
             prmtop=prmtop_file,
-            coords_in=coords_file  # This is the key! Uses the file from the prev step.
+            coords_in=coords_file
         )
         
-        # 5. Generate the .sh file for CTC
         sh_file = f"{step_name}.sh"
         generate_sh_launcher_ctc(sh_file, step_name, pmemd_command, CTC_SLURM_SETTINGS)
-
-        # 6. Submit the job and get Job ID
         result = subprocess.run(['sbatch', '--parsable', sh_file], stdout=subprocess.PIPE, text=True, check=True)
         job_id = result.stdout.strip()
-        print(f"Job {step_name} submitted with JobID: {job_id}")
+        print(f"Job submitted. Step: {step_name} | JobID: {job_id}")
 
-        # 7. Wait for the job to complete (using CTC logic)
-        print(f"Waiting for job {job_id} to complete...")
+        print(f"Waiting for JobID {job_id} to complete...")
         while not job_finished(job_id):
-            time.sleep(10)  # Wait 10 seconds before checking again
-        
-        # Check that the output file exists and has TIMINGS
-        output_file = f"{step_name}.out"
-        print(f"Checking for 'TIMINGS' in {output_file}...")
-        while not check_timings_in_output(output_file):
-            print(f"'TIMINGS' not found yet, waiting 10 seconds...")
             time.sleep(10)
         
-        print(f"Job {step_name} completed and contains TIMINGS.")
+        output_file = f"{step_name}.out"
+        print(f"Job finished. Verifying output in {output_file}...")
+        while not check_timings_in_output(output_file):
+            print(f"Warning: 'TIMINGS' tag not found yet in {output_file}. Waiting 10s...")
+            time.sleep(10)
+        
+        print(f"Step {step_name} successfully completed.")
 
-        # 8. Prepare variables for the next loop iteration
         os.chdir('..')
-        previous_step_dir = current_dir
-        coords_file = f"{step_name}.rst"  # The output of this step is the input for the next
+        previous_step_dir = step_name
+        coords_file = f"{step_name}.rst"
 
-    print("--- Simulation Workflow Completed ---")
+    print("--- Simulation Workflow Successfully Completed ---")
 
 if __name__ == '__main__':
     try:

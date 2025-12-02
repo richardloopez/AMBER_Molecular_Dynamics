@@ -18,7 +18,7 @@ GLOBAL_SETTINGS = {
     'base_inpcrd': 'system.inpcrd',     # Original inpcrd from tleap
     'hmass_prmtop': 'system_hmass.prmtop', # Output prmtop from H-mass repartitioning
     'parmed_dir': 'parmed_setup',
-    'base_dir': 'bases'                 # Directory containing original prmtop/inpcrd
+    'base_dir': 'bases',                 # Directory containing original prmtop/inpcrd
     'START_STEP_NUMBER': 0            # Change this if you want to start from a different step
 }
 

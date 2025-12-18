@@ -220,11 +220,11 @@ def write_data_to_csv(data_dict, output_filename):
                 R1 = ""
                 R2 = ""
 
-            # Get values, defaulting to 0.0 if missing
-            EELEC_AV = values.get("EELEC_AV", 0.0)
-            EELEC_STDDEV = values.get("EELEC_STDDEV", 0.0)
-            EVDW_AV = values.get("EVDW_AV", 0.0)
-            EVDW_STDDEV = values.get("EVDW_STDDEV", 0.0)
+            # Get values, defaulting to inf if missing
+            EELEC_AV = values.get("EELEC_AV", "inf")
+            EELEC_STDDEV = values.get("EELEC_STDDEV", "inf")
+            EVDW_AV = values.get("EVDW_AV", "inf")
+            EVDW_STDDEV = values.get("EVDW_STDDEV", "inf")
 
             # Calculate TOTAL_AV and TOTAL_STDDEV
             TOTAL_AV = EELEC_AV + EVDW_AV

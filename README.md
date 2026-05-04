@@ -416,7 +416,6 @@ The script will generate an output CSV file named {input_file_name}_{molecule_co
 Output:
 The script generates a CSV file summarizing the analysis with detailed counts and residue lists for each selected molecule code.
 
-Let me know if you need further adjustments!
 
 
 

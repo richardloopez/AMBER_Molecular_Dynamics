@@ -116,7 +116,7 @@ if computing_mode == 1:
     target_atom = None
     target_residue = str(target)
     items_to_process = [
-        str(i) for i in range(1, total_residues + 1) if i != target_residue
+        str(i) for i in range(1, total_residues + 1) if str(i) != target_residue 
     ]
 
 elif computing_mode == 2:
@@ -132,7 +132,12 @@ elif computing_mode == 3:
     ]
 
 # Generate cpptraj script to calculate distances
-cpptraj_script = [f"parm {topology_file}", f"trajin {trajectory_file}"]
+cpptraj_script = [
+    f"parm {topology_file}",
+    f"trajin {trajectory_file}",
+]  # Se añadiría aquí
+
+# Ej: cpptraj_script = [f"parm {topology_file}", f"trajin {trajectory_file}", f"autoimage :1-100,101-174", f"image familiar"]
 
 if computing_mode == 1:
     cpptraj_script.extend(

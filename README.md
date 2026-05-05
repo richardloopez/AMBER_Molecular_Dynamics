@@ -312,69 +312,36 @@ Output: A file (lie.dat) with LIE analysis results
 
 **10. distance_analyzer.py**
 
-Description
-This script automates the analysis of residue distances within molecular dynamics trajectories using cpptraj. It calculates distances between a specified target residue and all other residues, filters these distances based on a user-defined range, and generates comprehensive output files. Additionally, it resolves issues with PDB files containing more than 9999 residues by correctly adjusting residue numbering.
+## Description
+**Distance Analyzer** is an interactive, automated Python tool designed to compute and analyze distances between residues and atoms across Molecular Dynamics (MD) trajectories. By leveraging Amber's `cpptraj` under the hood, the script computes distances over time and generates clearly formatted CSV datasets. It is equipped with robust residue parsing that cleanly handles large systems and seamlessly tracks items like water molecules and ions.
+## Functionality
+The script works interactively and dynamically calculates distances in three distinct modes:
+1. **Residue - Residue:** Measures the distance between a target residue and all other residues in the system.
+2. **Atom - Residue:** Measures the distance between a specific target atom and all residues in the system.
+3. **Atom - Atom:** Measures the distance between a specific target atom and all other individual atoms.
+The tool automatically retrieves accurate 3-letter residue codes (e.g., `MET`, `GLU`, `WAT`) and atom identifiers from your system, filtering the results based on a user-defined threshold range (in Ångströms).
+## Usage
+Ensure you have `cpptraj` installed and accessible in your system's PATH.
+Run the script interactively from your terminal:
+```bash
+python3 distance_analyzer.py
+```
+The script will prompt you for the following inputs:
 
-Functionality
-Calculates distances between a target residue and all other residues in the trajectory using cpptraj.
-
-Filters calculated distances based on a user-defined minimum and maximum range.
-
-Handles PDB files with more than 9999 residues by:
-
-Detecting and adjusting residue numbers that restart at 0 due to AMBER's limitations.
-
-Correctly assigning unique numbers to residues by adding offsets for each cycle of 9999 residues.
-
-Generates three CSV files:
-
-A file containing all calculated distances.
-
-A file containing only the distances that fall within the specified range.
-
-A summary file that lists, for each frame, the residues within the specified distance range of the target residue.
-
-Automatically creates an output folder to store all generated CSV files for organized access.
-
-Cleans up all temporary files generated during the analysis.
-
-Usage
-Run the script:
-
-python distance_analyzer.py
-Provide the following inputs when prompted:
-
-Topology file (e.g., *.prmtop)
-
-Trajectory file (e.g., *.mdcrd or *.dcd)
-
-Target residue number
-
-Minimum distance for filtering (in Å)
-
-Maximum distance for filtering (in Å)
-
-Name of the output folder
-
+Topology file: Your system's topology (e.g., system.prmtop).
+Trajectory file: Your MD trajectory file (e.g., trajectory.mdcrd or trajectory.dcd).
+Computing Mode: Select 1 (Residue-Residue), 2 (Atom-Residue), or 3 (Atom-Atom).
+Target ID: The internal Amber index (integer) for the target atom or residue (e.g., 55).
+Distance range (Å):
+Minimum distance (e.g., 0.0).
+Maximum distance threshold (e.g., 5.0).
+Output folder name: A custom name for the directory where the output CSV files will be saved.
 Output
-The script generates the following output files within the specified output folder:
+Once the calculations are finished, the script will create the designated output folder containing three CSV files:
 
-{output_folder_name}_complete.csv: Contains all calculated distances between the target residue and every other residue for each frame.
-
-{output_folder_name}_filtered.csv: Contains distances that fall within the specified range.
-
-{output_folder_name}_summary.csv: Lists the residues within the specified distance range of the target residue for each frame.
-
-New Feature: Handling PDB Files with >9999 Residues
-Automatically adjusts residue numbering in PDB files where AMBER restarts numbering at 0 after reaching 9999 residues.
-
-Ensures unique numbering by adding offsets of +10000 for each cycle of 9999 residues:
-
-Example: Residue 0 becomes 10000, 1 becomes 10001, etc., in subsequent cycles.
-
-This adjustment guarantees compatibility with large systems without errors in residue identification.
-
-
+[output_name]_complete.csv Contains the raw, unfiltered distances between your target and every other entity in the system across all trajectory frames.
+[output_name]_filtered.csv Contains only the distance measurements that fall within your specified minimum and maximum thresholds. Anything outside the threshold is left blank.
+[output_name]_summary.csv Provides a quick frame-by-frame breakdown, listing the exact names and indices of all entities (e.g., MET_1, WAT_11298) that entered your specified distance range during that frame.
 
 **11.5 molecule_counter.py**
 

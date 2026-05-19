@@ -343,7 +343,7 @@ Once the calculations are finished, the script will create the designated output
 [output_name]_filtered.csv Contains only the distance measurements that fall within your specified minimum and maximum thresholds. Anything outside the threshold is left blank.
 [output_name]_summary.csv Provides a quick frame-by-frame breakdown, listing the exact names and indices of all entities (e.g., MET_1, WAT_11298) that entered your specified distance range during that frame.
 
-**11.5 molecule_counter.py**
+**10.5.A molecule_counter.py**
 
 Description:
 This script automates the analysis of molecular dynamics data by counting occurrences of specified molecule codes in a CSV file containing residue information. It processes each frame of the input data and generates a summary CSV file with detailed counts and residue lists for the selected molecule codes.
@@ -383,6 +383,14 @@ The script will generate an output CSV file named {input_file_name}_{molecule_co
 Output:
 The script generates a CSV file summarizing the analysis with detailed counts and residue lists for each selected molecule code.
 
+
+**10.5.B bindingpattern_grouper.py**
+Takes a csv with:
+frame, numberA, numberB, numberC,...
+
+groups frames with similar Binding Patterns
+
+Output a .csv with the suffix "_grouped_frames.csv"
 
 
 

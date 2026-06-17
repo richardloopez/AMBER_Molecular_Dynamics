@@ -310,7 +310,7 @@ Output: A file (lie.dat) with LIE analysis results
 
 
 
-**10. distance_analyzer.py**
+**10. distance_tools/distance_analyzer.py**
 
 ## Description
 **Distance Analyzer** is an interactive, automated Python tool designed to compute and analyze distances between residues and atoms across Molecular Dynamics (MD) trajectories. By leveraging Amber's `cpptraj` under the hood, the script computes distances over time and generates clearly formatted CSV datasets. It is equipped with robust residue parsing that cleanly handles large systems and seamlessly tracks items like water molecules and ions.
@@ -343,7 +343,7 @@ Once the calculations are finished, the script will create the designated output
 [output_name]_filtered.csv Contains only the distance measurements that fall within your specified minimum and maximum thresholds. Anything outside the threshold is left blank.
 [output_name]_summary.csv Provides a quick frame-by-frame breakdown, listing the exact names and indices of all entities (e.g., MET_1, WAT_11298) that entered your specified distance range during that frame.
 
-**10.5.A molecule_counter.py**
+**10.5.A.1 distance_tools/molecule_counter.py**
 
 Description:
 This script automates the analysis of molecular dynamics data by counting occurrences of specified molecule codes in a CSV file containing residue information. It processes each frame of the input data and generates a summary CSV file with detailed counts and residue lists for the selected molecule codes.
@@ -384,7 +384,34 @@ Output:
 The script generates a CSV file summarizing the analysis with detailed counts and residue lists for each selected molecule code.
 
 
-**10.5.B bindingpattern_grouper.py**
+**10.5.A.1 distance_tools/door_counter.py**
+
+A Python script designed to compare and compute the intersection of residue/atom appearances across an arbitrary number of molecular dynamics simulation CSV files on a frame-by-frame basis.
+
+## Features
+
+- **Multi-File Processing**: Dynamically input as many CSV files as you want using an interactive `while True` loop.
+- **Path Autocompletion**: Uses `readline` tab completion to make entering file paths quick and error-free on Unix systems.
+- **Robust Consistency Validation**: 
+  - Validates that each inputted file exists and has the correct column structure.
+  - Automatically identifies and checks that the `Residues_*` suffix headers match across all files.
+  - Verifies frame alignment to ensure data integrity.
+- **Optimized Intersections**: Uses Python sets for $O(1)$ lookups to find the intersection of residues efficiently per frame.
+- **Production-Grade Design**: Standardized with modular functions, clear pipeline structure in `main()`, comprehensive type hints, error handling, and docstrings.
+
+## Usage
+
+python3 door_counter.py
+
+## Output
+The final output is saved to door_counter_results.csv with the following columns:
+
+Frame: The simulation frame number.
+Residues: A list of residue/atom names present in all input files for that specific frame.
+Counter: The total count of common residues for that frame.
+
+
+**10.5.B distance_tools/bindingpattern_grouper.py**
 Takes a csv with:
 frame, numberA, numberB, numberC,...
 

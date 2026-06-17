@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Door Counter
+Intersector Counter
 
 Utility to read multiple CSV files containing frame-by-frame
 residue/atom information, validate their structure and consistency, and compute the
@@ -195,7 +195,7 @@ def compute_intersection(all_data: List[Dict[int, List[str]]]) -> Dict[int, Tupl
     return results
 
 
-def save_results(results: Dict[int, Tuple[List[str], int]], output_path: str = "door_counter_results.csv") -> None:
+def save_results(results: Dict[int, Tuple[List[str], int]], output_path: str = "intersector_counter_results.csv") -> None:
     """
     Formats and writes the final intersection results to a CSV file.
     

@@ -88,7 +88,7 @@ def obtain_different_residues(csv_file: Path) -> List[str]:
     return different_residues
 
 
-def validate_residue_headers(csv_files: List[Path]) -> None:
+def validate_residue_headers(csv_files: List[Path]) -> List[str]:
     """
     Validates that all CSV files have matching Residues_* headers.
     
@@ -110,6 +110,7 @@ def validate_residue_headers(csv_files: List[Path]) -> None:
             sys.exit(1)
             
     print("\nResidues match across all files, nice!")
+    return base_residues
 
 
 def extract_appearances(csv_file: Path) -> Dict[int, List[str]]:
@@ -195,7 +196,7 @@ def compute_intersection(all_data: List[Dict[int, List[str]]]) -> Dict[int, Tupl
     return results
 
 
-def save_results(results: Dict[int, Tuple[List[str], int]], output_path: str = "intersector_counter_results.csv") -> None:
+def save_results(results: Dict[int, Tuple[List[str], int]], base_residues: List[str], output_path: str = "intersector_counter_results.csv") -> None:
     """
     Formats and writes the final intersection results to a CSV file.
     
@@ -207,7 +208,7 @@ def save_results(results: Dict[int, Tuple[List[str], int]], output_path: str = "
     for frame, (residues, counter) in sorted(results.items()):
         list_results.append([frame, residues, counter])
         
-    df = pd.DataFrame(list_results, columns=["Frame", "Residues", "Counter"])
+    df = pd.DataFrame(list_results, columns=["Frame", f"Residues_{base_residues[0]}", "Counter"])
     try:
         df.to_csv(output_path, index=False)
         print(f"\nResults successfully written to '{output_path}'")
@@ -224,7 +225,7 @@ def main() -> None:
     csv_files = prompt_for_csv_files()
     
     # 2. Validate residue columns match
-    validate_residue_headers(csv_files)
+    base_residues = validate_residue_headers(csv_files)
     
     # 3. Extract appearances
     all_data = [extract_appearances(f) for f in csv_files]
@@ -233,7 +234,7 @@ def main() -> None:
     results = compute_intersection(all_data)
     
     # 5. Save results
-    save_results(results)
+    save_results(results, base_residues)
 
 
 if __name__ == "__main__":

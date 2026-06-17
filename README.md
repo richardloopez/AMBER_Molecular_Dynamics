@@ -384,7 +384,7 @@ Output:
 The script generates a CSV file summarizing the analysis with detailed counts and residue lists for each selected molecule code.
 
 
-**10.5.A.1 distance_tools/door_counter.py**
+**10.5.A.1 distance_tools/intersector_counter.py**
 
 A Python script designed to compare and compute the intersection of residue/atom appearances across an arbitrary number of molecular dynamics simulation CSV files on a frame-by-frame basis.
 
@@ -401,10 +401,10 @@ A Python script designed to compare and compute the intersection of residue/atom
 
 ## Usage
 
-python3 door_counter.py
+python3 intersector_counter.py
 
 ## Output
-The final output is saved to door_counter_results.csv with the following columns:
+The final output is saved to intersector_counter_results.csv with the following columns:
 
 Frame: The simulation frame number.
 Residues: A list of residue/atom names present in all input files for that specific frame.

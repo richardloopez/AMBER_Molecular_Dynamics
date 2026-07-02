@@ -137,7 +137,103 @@ with open(output_file, "w") as f:
 print(f"CSV file saved as '{output_file}'")
 
 
+############################### PLOT #################################
 
+generate_plot = input("\nGenerate publication-grade RMSD plot? (y/n): ").strip().lower()
+if generate_plot == "y":
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        import numpy as np
+    except ImportError:
+        print("ERROR: matplotlib and numpy are required for plotting.")
+        print("Install with: python -m pip install matplotlib numpy")
+    else:
+        try:
+            timestep_input = input("Enter timestep (default 0.01 ns between frames): ").strip()
+            timestep_ns = float(timestep_input) if timestep_input else 0.01
+
+            plot_title = input("Plot title (press Enter for none): ").strip()
+            output_pdf = "rmsd_plot.pdf"
+            output_png = "rmsd_plot.png"
+
+            with open(output_file, "r") as f:
+                csv_lines = [line.strip() for line in f if line.strip()]
+            header = csv_lines[0].split(",")
+            ncols = len(header)
+
+            def parse_block(lines, x_col, y_col):
+                x_data, y_data = [], []
+                for line in lines:
+                    cols = line.split(",")
+                    if x_col < len(cols) and y_col < len(cols):
+                        try:
+                            x_data.append(float(cols[x_col]))
+                            y_data.append(float(cols[y_col]))
+                        except ValueError:
+                            continue
+                return np.array(x_data), np.array(y_data)
+
+            data_rows = csv_lines[1:]
+            time_lig, rmsd_lig = parse_block(data_rows, 3, 4)
+            time_rec, rmsd_rec = parse_block(data_rows, 0, 1)
+            time_lr,  rmsd_lr  = parse_block(data_rows, 6, 7)
+
+            time_lig = time_lig * timestep_ns
+            time_rec = time_rec * timestep_ns
+            time_lr  = time_lr  * timestep_ns
+
+            matplotlib.rcParams.update({
+                "font.family": "sans-serif",
+                "font.sans-serif": ["Arial", "Helvetica", "DejaVu Sans"],
+                "font.size": 14,
+                "axes.labelsize": 16,
+                "axes.titlesize": 18,
+                "xtick.labelsize": 13,
+                "ytick.labelsize": 13,
+                "legend.fontsize": 13,
+                "lines.linewidth": 1.8,
+                "axes.linewidth": 1.2,
+                "xtick.major.width": 1.2,
+                "ytick.major.width": 1.2,
+                "xtick.major.size": 6,
+                "ytick.major.size": 6,
+                "xtick.minor.size": 3,
+                "ytick.minor.size": 3,
+                "figure.facecolor": "white",
+                "axes.facecolor": "white",
+                "savefig.bbox": "tight",
+                "savefig.dpi": 300,
+            })
+
+            fig, ax = plt.subplots(figsize=(5.5, 4.0))
+
+            ax.plot(time_rec, rmsd_rec, color="#2166ac", label="Receptor")
+            ax.plot(time_lig, rmsd_lig, color="#b2182b", label="Ligand")
+            ax.plot(time_lr,  rmsd_lr,  color="#4daf4a", label="Ligand+Receptor")
+
+            if plot_title:
+                ax.set_title(plot_title)
+
+            ax.set_xlabel("Time (ns)")
+            ax.set_ylabel("RMSD (Å)")
+
+            ax.legend(frameon=True, fancybox=False, edgecolor="black")
+
+            ax.tick_params(direction="in", which="both")
+            ax.minorticks_on()
+
+            fig.savefig(output_pdf)
+            fig.savefig(output_png, dpi=300)
+            plt.close(fig)
+
+            print(f"Publication-grade RMSD plot saved:")
+            print(f"  Vector:  {output_pdf}")
+            print(f"  Raster:  {output_png} (300 DPI)")
+
+        except Exception as e:
+            print(f"ERROR during plotting: {e}")
 
 ############################################################################################
 
